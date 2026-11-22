@@ -304,7 +304,7 @@ void draw_face(Layer *layer, GContext *ctx) {
   // Stacked clock: date, hours, a thin info row, minutes, extra line.
   // CLOCK_CAP is the height of the digits; CLOCK_PAD is the space the font
   // leaves above them inside its text box.
-  const int CLOCK_CAP = 60, CLOCK_PAD = 19, CLOCK_BOX = 84;
+  const int CLOCK_CAP = 58, CLOCK_PAD = 23, CLOCK_BOX = 88;
   const int cx = b.origin.x + b.size.w / 2;
   const int cy = b.origin.y + b.size.h / 2;
   const int total = 18 + CLOCK_CAP + 10 + 18 + 10 + CLOCK_CAP + (corner[0] ? 20 : 0);

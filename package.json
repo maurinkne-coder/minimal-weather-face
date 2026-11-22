@@ -70,7 +70,7 @@
         {
           "type": "font",
           "name": "FONT_CLOCK_80",
-          "file": "fonts/Inter-ExtraBold.ttf",
+          "file": "fonts/ContourDigits-Black.ttf",
           "characterRegex": "[0-9]",
           "trackingAdjust": -2
         }

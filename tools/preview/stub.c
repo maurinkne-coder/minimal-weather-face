@@ -84,7 +84,7 @@ GSize graphics_text_layout_get_content_size(const char *t, GFont f, GRect r, GTe
   if (!strcmp(f, "gothic14b") || !strcmp(f, "gothic14")) { cw = 6; h = 14; }
   else if (!strcmp(f, "gothic18") || !strcmp(f, "gothic18b")) { cw = 7; h = 18; }
   else if (!strcmp(f, "gothic24b")) { cw = 10; h = 24; }
-  else if (!strncmp(f, "clock", 5)) { cw = 53; h = 80; }
+  else if (!strncmp(f, "clock", 5)) { cw = 66; h = 80; }
   int w = n * cw; if (w > r.size.w) w = r.size.w;
   return (GSize){(int16_t)w, (int16_t)h};
 }

@@ -62,7 +62,7 @@ def render(log, w, h, round_, out):
         elif k == "text" and c[2].startswith("clock"):
             _, s, f, x, y, bw, bh, a = c
             size = int(f[5:])
-            font = ImageFont.truetype(os.path.join(HERE, "../../resources/fonts/Inter-ExtraBold.ttf"), size * S)
+            font = ImageFont.truetype(os.path.join(HERE, "../../resources/fonts/ContourDigits-Black.ttf"), size * S)
             adv = [d.textlength(ch, font=font) - 2 * S for ch in s]
             tw = sum(adv) + 2 * S
             if tw > bw * S:
