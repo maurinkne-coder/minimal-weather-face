@@ -36,7 +36,7 @@ gs["eight"].draw(rec)
 coords, ends, flags = f["glyf"]["eight"].getCoordinates(f["glyf"])
 # A smooth dip: the side runs straight into the notch and out again with no
 # corner (TrueType quadratic curves, tangent stays vertical at both ends).
-M, W, D = 365, 66, 72  # middle of the bar, half height and depth of the dip
+M, W, D = 365, 66, 40  # middle of the bar, half height and depth of the dip
 def dip(x, k):  # k = +1 on the left side, -1 on the right side
     pts = [((x, M - W), 1), ((x, M - W * 0.45), 0), ((x + k * D, M - W * 0.4), 0), ((x + k * D, M), 1),
            ((x + k * D, M + W * 0.4), 0), ((x, M + W * 0.45), 0), ((x, M + W), 1)]

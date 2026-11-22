@@ -365,7 +365,7 @@ void draw_face(Layer *layer, GContext *ctx) {
     int32_t done = g_view.steps > goal ? goal : g_view.steps;
     // Same thickness and distance from the text as the battery line, so the
     // two frame the info row evenly.
-    GRect r = GRect(cx - BAR_W / 2, cy + 12, BAR_W, 2);
+    GRect r = GRect(cx - BAR_W / 2, cy + 8, BAR_W, 2);
     graphics_context_set_fill_color(ctx, th.dim);
     graphics_fill_rect(ctx, r, 0, GCornerNone);
     graphics_context_set_fill_color(ctx, th.accent);
