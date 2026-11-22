@@ -39,7 +39,7 @@ void app_message_register_inbox_received(void (*)(DictionaryIterator*, void*)); 
 void app_event_loop(void);
 typedef struct GBitmap GBitmap;
 typedef enum { GBitmapFormat8Bit } GBitmapFormat;
-typedef enum { GCompOpAssign } GCompOp;
+typedef enum { GCompOpAssign, GCompOpSet } GCompOp;
 typedef struct { uint8_t *data; int16_t min_x, max_x; } GBitmapDataRowInfo;
 GBitmap *gbitmap_create_blank(GSize, GBitmapFormat); void gbitmap_destroy(GBitmap*);
 uint8_t *gbitmap_get_data(const GBitmap*); uint16_t gbitmap_get_bytes_per_row(const GBitmap*);
@@ -47,7 +47,11 @@ GBitmapDataRowInfo gbitmap_get_data_row_info(const GBitmap*, uint16_t);
 GBitmap *graphics_capture_frame_buffer(GContext*); bool graphics_release_frame_buffer(GContext*, GBitmap*);
 void graphics_context_set_compositing_mode(GContext*, GCompOp);
 void graphics_draw_rotated_bitmap(GContext*, GBitmap*, GPoint, int32_t, GPoint);
-enum { RESOURCE_ID_FONT_CLOCK_86 = 1, RESOURCE_ID_FONT_CLOCK_88 = 2, RESOURCE_ID_FONT_SMALL_12 = 3 };
+enum { RESOURCE_ID_FONT_SMALL_12 = 3, RESOURCE_ID_DIGIT_0 = 10, RESOURCE_ID_DIGIT_1, RESOURCE_ID_DIGIT_2, RESOURCE_ID_DIGIT_3, RESOURCE_ID_DIGIT_4, RESOURCE_ID_DIGIT_5, RESOURCE_ID_DIGIT_6, RESOURCE_ID_DIGIT_7, RESOURCE_ID_DIGIT_8, RESOURCE_ID_DIGIT_9 };
+GBitmap *gbitmap_create_with_resource(uint32_t); GRect gbitmap_get_bounds(const GBitmap *); GColor *gbitmap_get_palette(const GBitmap *); void graphics_draw_bitmap_in_rect(GContext *, const GBitmap *, GRect);
+#ifndef GColorClear
+#define GColorClear ((GColor){0x00})
+#endif
 ResHandle resource_get_handle(uint32_t); GFont fonts_load_custom_font(ResHandle); void fonts_unload_custom_font(GFont);
 #define SECONDS_PER_DAY 86400
 typedef struct { const uint32_t *durations; uint32_t num_segments; } VibePattern; void vibes_enqueue_custom_pattern(VibePattern);

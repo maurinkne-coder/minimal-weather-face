@@ -96,7 +96,6 @@ typedef struct {
 extern Settings g_set;
 extern Weather g_wx;
 extern ViewState g_view;
-extern GFont g_time_font;   // big blocky digits for the stacked clock
 extern GFont g_small_font;  // same style, small capitals for date and labels
 
 // weather.c
@@ -116,6 +115,12 @@ void text_corner(char *buf, size_t n);
 void text_scrub(char *line1, size_t n1, char *line2, size_t n2, time_t t);
 void fmt_temp(char *buf, size_t n, int16_t tenths);
 void fmt_rain_short(char *buf, size_t n, int tenths_mm);
+
+// digits.c: the big clock digits, drawn from images (fonts can't be this big).
+void digits_load(void);
+void digits_unload(void);
+// Draws `s` (digits only) centred on cx with its top at `top`, `gap` px apart.
+void digits_draw(GContext *ctx, const char *s, int cx, int top, int gap, GColor color, GColor bg);
 
 // draw.c
 void draw_face(Layer *layer, GContext *ctx);

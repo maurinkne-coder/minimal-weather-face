@@ -354,18 +354,18 @@ void draw_face(Layer *layer, GContext *ctx) {
   text_corner(corner, sizeof(corner));
 
   // Stacked clock, everything centred on the screen: the info row sits on the
-  // middle line, hours above it and minutes below it as large as the space
-  // inside the rain chart allows, then the date on top and the extra line at
+  // middle line, hours above it and minutes below it as large as the screen
+  // allows (the rounded digit corners reach into the rain chart), then the date on top and the extra line at
   // the bottom in small capitals of the same blocky font.
-  // CAP is the digit height; PAD is the space the font leaves above the digits
-  // inside its text box (both measured from the font at that size).
+  // CAP is the digit height (the height of the digit images), GAP the space
+  // between two digits.
 #ifdef PBL_ROUND
-  const int CAP = 62, PAD = 25, BOX = 94, MAX_W = 192, BAR_W = 140;
+  const int CAP = 74, GAP = 11, MAX_W = 192, BAR_W = 166;
 #else
-  const int CAP = 63, PAD = 26, BOX = 96, MAX_W = 160, BAR_W = 148;
+  const int CAP = 78, GAP = 12, MAX_W = 160, BAR_W = 174;
 #endif
-  const int HALF = 18;                 // centre line to the digits
-  const int SMALL_CAP = 9, SMALL_PAD = 4, SMALL_GAP = 7;
+  const int HALF = 15;                 // centre line to the digits
+  const int SMALL_CAP = 9, SMALL_PAD = 4, SMALL_GAP = 6;
   const int cx = b.origin.x + b.size.w / 2;
   const int cy = b.origin.y + b.size.h / 2;
   const int hh_top = cy - HALF - CAP;
@@ -375,8 +375,8 @@ void draw_face(Layer *layer, GContext *ctx) {
   upper_utf8(corner);
   draw_text_font(ctx, date, g_small_font,
                  GRect(cx - 70, hh_top - SMALL_GAP - SMALL_CAP - SMALL_PAD, 140, 18), th.dim);
-  draw_text_font(ctx, hh, g_time_font, GRect(b.origin.x, hh_top - PAD, b.size.w, BOX), th.fg);
-  draw_text_font(ctx, mm, g_time_font, GRect(b.origin.x, mm_top - PAD, b.size.w, BOX), th.fg);
+  digits_draw(ctx, hh, cx, hh_top, GAP, th.fg, th.bg);
+  digits_draw(ctx, mm, cx, mm_top, GAP, th.fg, th.bg);
   const int corner_y = mm_top + CAP + SMALL_GAP - SMALL_PAD;
   if (g_set.corner == CORNER_TEMP) {
     // Today's low, now and high: the current temperature bright in the middle.
@@ -408,7 +408,7 @@ void draw_face(Layer *layer, GContext *ctx) {
   // a faint full-width track with the filled part on top.
   if (g_set.battline) {
     int pct = g_view.battery > 100 ? 100 : g_view.battery;
-    GRect r = GRect(cx - BAR_W / 2, cy - 14, BAR_W, 2);
+    GRect r = GRect(cx - BAR_W / 2, cy - 13, BAR_W, 2);
     graphics_context_set_fill_color(ctx, th.dim);
     graphics_fill_rect(ctx, r, 0, GCornerNone);
     GColor c = th.fg;
@@ -431,9 +431,9 @@ void draw_face(Layer *layer, GContext *ctx) {
   if (g_set.stepbar && g_view.steps >= 0) {
     int32_t goal = g_view.step_goal > 0 ? g_view.step_goal : 10000;
     int32_t done = g_view.steps > goal ? goal : g_view.steps;
-    // Same thickness and distance from the text as the battery line, so the
-    // two frame the info row evenly.
-    GRect r = GRect(cx - BAR_W / 2, cy + 8, BAR_W, 2);
+    // Mirrors the battery line: both sit 2 px from the digits and frame the
+    // info row evenly.
+    GRect r = GRect(cx - BAR_W / 2, cy + 11, BAR_W, 2);
     graphics_context_set_fill_color(ctx, th.dim);
     graphics_fill_rect(ctx, r, 0, GCornerNone);
     graphics_context_set_fill_color(ctx, th.steps);
@@ -445,7 +445,9 @@ void draw_face(Layer *layer, GContext *ctx) {
   // accent colour. Both use the same font so they share one baseline.
   {
     GFont f = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
-    int top = cy - 13;
+    // Lines sit at cy-13 and cy+11 (2 px from the digits each). The capital
+    // letters and digits of the text are centred in the 22 px between them.
+    int top = cy - 12;
     GRect wide = GRect(0, 0, 400, 24);
     int wl = graphics_text_layout_get_content_size(left, f, wide, GTextOverflowModeTrailingEllipsis,
                                                    GTextAlignmentLeft).w;
@@ -455,7 +457,7 @@ void draw_face(Layer *layer, GContext *ctx) {
     if (wl + 5 + wr > MAX_W && right[0]) {
       // Too long: drop both to the smaller font before cutting anything off.
       f = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
-      top = cy - 9;
+      top = cy - 8;
       wl = graphics_text_layout_get_content_size(left, f, wide, GTextOverflowModeTrailingEllipsis,
                                                  GTextAlignmentLeft).w;
       wr = graphics_text_layout_get_content_size(right, f, wide, GTextOverflowModeTrailingEllipsis,
