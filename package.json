@@ -69,10 +69,30 @@
       "media": [
         {
           "type": "font",
-          "name": "FONT_CLOCK_80",
+          "name": "FONT_CLOCK_88",
           "file": "fonts/ContourDigits-Black.ttf",
           "characterRegex": "[0-9]",
-          "trackingAdjust": -2
+          "trackingAdjust": -2,
+          "targetPlatforms": [
+            "gabbro"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_CLOCK_92",
+          "file": "fonts/ContourDigits-Black.ttf",
+          "characterRegex": "[0-9]",
+          "trackingAdjust": -2,
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FONT_SMALL_12",
+          "file": "fonts/ContourDigits-Black.ttf",
+          "characterRegex": "[ -~°ÄÖÜÉÈÊÀÂÎÔÛÇÑÍÓÚÌÒÙËÏ]",
+          "trackingAdjust": 1
         }
       ]
     }

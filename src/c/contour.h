@@ -81,7 +81,8 @@ typedef struct {
 extern Settings g_set;
 extern Weather g_wx;
 extern ViewState g_view;
-extern GFont g_time_font;   // big bold digits for the stacked clock
+extern GFont g_time_font;   // big blocky digits for the stacked clock
+extern GFont g_small_font;  // same style, small capitals for date and labels
 
 // weather.c
 int wx_index_at(time_t t);           // hourly index covering t, or -1

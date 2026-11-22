@@ -4,10 +4,11 @@
 
 Settings g_set; Weather g_wx; ViewState g_view;
 #ifdef PBL_ROUND
-GFont g_time_font = "clock80";
+GFont g_time_font = "clock88";
 #else
-GFont g_time_font = "clock80";
+GFont g_time_font = "clock92";
 #endif
+GFont g_small_font = "small12";
 static int W, H;
 struct Layer { int dummy; };
 struct GContext { GColor fill, stroke, text; int sw; };
@@ -84,7 +85,8 @@ GSize graphics_text_layout_get_content_size(const char *t, GFont f, GRect r, GTe
   if (!strcmp(f, "gothic14b") || !strcmp(f, "gothic14")) { cw = 6; h = 14; }
   else if (!strcmp(f, "gothic18") || !strcmp(f, "gothic18b")) { cw = 7; h = 18; }
   else if (!strcmp(f, "gothic24b")) { cw = 10; h = 24; }
-  else if (!strncmp(f, "clock", 5)) { cw = 66; h = 80; }
+  else if (!strncmp(f, "clock", 5)) { cw = atoi(f + 5) * 82 / 100; h = atoi(f + 5); }
+  else if (!strncmp(f, "small", 5)) { cw = 9; h = 12; }
   int w = n * cw; if (w > r.size.w) w = r.size.w;
   return (GSize){(int16_t)w, (int16_t)h};
 }

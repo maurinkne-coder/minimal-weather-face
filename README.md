@@ -33,7 +33,7 @@ fonts, so the lettering differs a little from the watch._
   is unlikely.
 - **Rain amounts**: when rain is coming, the smart line adds the heaviest
   hour of the spell, like `Rain in 45 min · 2.8 mm`.
-- **Clock**: big bold stacked hours over minutes in a wide, square "techno" style (Contour Digits, a modified Orbitron Black), with the
+- **Clock**: big bold stacked hours over minutes in a wide, square "techno" style (Contour Digits, a modified Orbitron Black), as large as fits inside the rain chart. The date and the extra line use small capitals of the same font, with the
   date small above. Between them is a thin info row with the temperature and
   the smart line, and an optional extra line (battery, steps or heart rate)
   sits below.

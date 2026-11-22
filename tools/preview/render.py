@@ -59,12 +59,13 @@ def render(log, w, h, round_, out):
             _, deg, a = c
             img = img.rotate(-deg, resample=Image.NEAREST, center=(w * S / 2, h * S / 2), fillcolor=col(a))
             d = ImageDraw.Draw(img)
-        elif k == "text" and c[2].startswith("clock"):
+        elif k == "text" and (c[2].startswith("clock") or c[2].startswith("small")):
             _, s, f, x, y, bw, bh, a = c
             size = int(f[5:])
+            track = -2 if f.startswith("clock") else 1
             font = ImageFont.truetype(os.path.join(HERE, "../../resources/fonts/ContourDigits-Black.ttf"), size * S)
-            adv = [d.textlength(ch, font=font) - 2 * S for ch in s]
-            tw = sum(adv) + 2 * S
+            adv = [d.textlength(ch, font=font) + track * S for ch in s]
+            tw = sum(adv) - track * S
             if tw > bw * S:
                 overflow.append(s)
             px = x * S + (bw * S - tw) / 2

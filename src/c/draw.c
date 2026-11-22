@@ -278,8 +278,16 @@ static void draw_text_font(GContext *ctx, const char *s, GFont font, GRect r, GC
   graphics_draw_text(ctx, s, font, r, GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
 }
 
-static void draw_text_line(GContext *ctx, const char *s, const char *font, GRect r, GColor c) {
-  draw_text_font(ctx, s, fonts_get_system_font(font), r, c);
+// Capital letters for the small blocky font (ASCII and Latin-1 accents).
+static void upper_utf8(char *s) {
+  for (unsigned char *p = (unsigned char *)s; *p; p++) {
+    if (*p >= 'a' && *p <= 'z') {
+      *p -= 32;
+    } else if (*p == 0xC3 && p[1] >= 0xA0 && p[1] <= 0xBE && p[1] != 0xB7) {
+      p[1] -= 0x20;
+      p++;
+    }
+  }
 }
 
 void draw_face(Layer *layer, GContext *ctx) {
@@ -301,52 +309,62 @@ void draw_face(Layer *layer, GContext *ctx) {
   }
   text_corner(corner, sizeof(corner));
 
-  // Stacked clock: date, hours, a thin info row, minutes, extra line.
-  // CLOCK_CAP is the height of the digits; CLOCK_PAD is the space the font
-  // leaves above them inside its text box.
-  const int CLOCK_CAP = 58, CLOCK_PAD = 23, CLOCK_BOX = 88;
+  // Stacked clock, everything centred on the screen: the info row sits on the
+  // middle line, hours above it and minutes below it as large as the space
+  // inside the rain chart allows, then the date on top and the extra line at
+  // the bottom in small capitals of the same blocky font.
+  // CAP is the digit height; PAD is the space the font leaves above the digits
+  // inside its text box (both measured from the font at that size).
+#ifdef PBL_ROUND
+  const int CAP = 63, PAD = 26, BOX = 96, MAX_W = 192;
+#else
+  const int CAP = 66, PAD = 28, BOX = 100, MAX_W = 160;
+#endif
+  const int HALF = 11;                 // centre line to the digits
+  const int SMALL_CAP = 9, SMALL_PAD = 4, SMALL_GAP = 7;
   const int cx = b.origin.x + b.size.w / 2;
   const int cy = b.origin.y + b.size.h / 2;
-  const int total = 18 + CLOCK_CAP + 10 + 18 + 10 + CLOCK_CAP + (corner[0] ? 20 : 0);
-  int y = cy - total / 2 + (corner[0] ? 0 : 4);
+  const int hh_top = cy - HALF - CAP;
+  const int mm_top = cy + HALF;
 
-  draw_text_line(ctx, date, FONT_KEY_GOTHIC_14_BOLD, GRect(cx - 60, y - 3, 120, 18), th.dim);
-  y += 18;
-  draw_text_font(ctx, hh, g_time_font, GRect(b.origin.x, y - CLOCK_PAD, b.size.w, CLOCK_BOX), th.fg);
-  y += CLOCK_CAP + 10;
+  upper_utf8(date);
+  upper_utf8(corner);
+  draw_text_font(ctx, date, g_small_font,
+                 GRect(cx - 70, hh_top - SMALL_GAP - SMALL_CAP - SMALL_PAD, 140, 18), th.dim);
+  draw_text_font(ctx, hh, g_time_font, GRect(b.origin.x, hh_top - PAD, b.size.w, BOX), th.fg);
+  draw_text_font(ctx, mm, g_time_font, GRect(b.origin.x, mm_top - PAD, b.size.w, BOX), th.fg);
+  if (corner[0]) {
+    draw_text_font(ctx, corner, g_small_font,
+                   GRect(cx - 70, mm_top + CAP + SMALL_GAP - SMALL_PAD, 140, 18), th.dim);
+  }
 
-  // Info row: temperature in the main colour, then the smart line.
+  // Info row: temperature in small capitals, then the smart line.
   {
-    const int max_w = PBL_IF_ROUND_ELSE(190, 156);
-    GFont fl = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
-    GFont fr = fonts_get_system_font(FONT_KEY_GOTHIC_18);
+    upper_utf8(left);
+    GFont fl = g_small_font;
+    GFont fr = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
     GRect wide = GRect(0, 0, 400, 24);
     int wl = graphics_text_layout_get_content_size(left, fl, wide, GTextOverflowModeTrailingEllipsis,
                                                    GTextAlignmentLeft).w;
     int wr = right[0] ? graphics_text_layout_get_content_size(right, fr, wide,
                                                               GTextOverflowModeTrailingEllipsis,
                                                               GTextAlignmentLeft).w : 0;
-    if (wl + 6 + wr > max_w && right[0]) {
+    bool small_right = false;
+    if (wl + 8 + wr > MAX_W && right[0]) {
       // Too long: drop to the smaller font before cutting anything off.
-      fr = fonts_get_system_font(FONT_KEY_GOTHIC_14);
+      fr = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
+      small_right = true;
       wr = graphics_text_layout_get_content_size(right, fr, wide, GTextOverflowModeTrailingEllipsis,
                                                  GTextAlignmentLeft).w;
     }
-    int gap = wr ? 6 : 0;
-    if (wl + gap + wr > max_w) wr = max_w - wl - gap;
+    int gap = wr ? 8 : 0;
+    if (wl + gap + wr > MAX_W) wr = MAX_W - wl - gap;
     int x0 = cx - (wl + gap + wr) / 2;
-    draw_text_font(ctx, left, fl, GRect(x0 - 2, y - 6, wl + 4, 24), th.fg);
+    draw_text_font(ctx, left, fl, GRect(x0 - 2, cy - SMALL_CAP / 2 - SMALL_PAD, wl + 4, 18), th.fg);
     if (wr > 0) {
-      int dy = wr && fr == fonts_get_system_font(FONT_KEY_GOTHIC_14) ? -2 : -6;
-      draw_text_font(ctx, right, fr, GRect(x0 + wl + gap - 2, y + dy, wr + 4, 24), th.accent);
+      int top = small_right ? cy - 9 : cy - 13;
+      draw_text_font(ctx, right, fr, GRect(x0 + wl + gap - 2, top, wr + 4, 24), th.accent);
     }
-  }
-  y += 18 + 10;
-
-  draw_text_font(ctx, mm, g_time_font, GRect(b.origin.x, y - CLOCK_PAD, b.size.w, CLOCK_BOX), th.fg);
-  y += CLOCK_CAP + 4;
-  if (corner[0]) {
-    draw_text_line(ctx, corner, FONT_KEY_GOTHIC_14, GRect(cx - 60, y - 2, 120, 18), th.dim);
   }
 
   // Turn the text, then draw the forecast line already turned.
