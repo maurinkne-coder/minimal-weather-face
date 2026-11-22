@@ -36,21 +36,29 @@ gs["eight"].draw(rec)
 coords, ends, flags = f["glyf"]["eight"].getCoordinates(f["glyf"])
 # A smooth dip: the side runs straight into the notch and out again with no
 # corner (TrueType quadratic curves, tangent stays vertical at both ends).
-M, W, D = 365, 66, 40  # middle of the bar, half height and depth of the dip
+M, W, D = 365, 150, 42  # middle of the bar, half height and depth of the dip (a long gentle wave)
+from fontTools.cu2qu import curve_to_quadratic
 def dip(x, k):  # k = +1 on the left side, -1 on the right side
-    pts = [((x, M - W), 1), ((x, M - W * 0.45), 0), ((x + k * D, M - W * 0.4), 0), ((x + k * D, M), 1),
-           ((x + k * D, M + W * 0.4), 0), ((x, M + W * 0.45), 0), ((x, M + W), 1)]
+    # Two smooth eased S-curves (cubic, converted to TrueType quadratics):
+    # vertical tangent where it leaves the side and at the deepest point.
+    def half(p0, p3):
+        my = (p0[1] + p3[1]) / 2
+        q = curve_to_quadratic([p0, (p0[0], my), (p3[0], my), p3], 1.0)
+        return [(q[0], 1)] + [(pt, 0) for pt in q[1:-1]] + [(q[-1], 1)]
+    a = half((x, M - W), (x + k * D, M))
+    b = half((x + k * D, M), (x, M + W))
+    pts = a + b[1:]
     return [((round(px), round(py)), on) for (px, py), on in pts]
 outer = [((x, y), fl & 1) for (x, y), fl in zip(list(coords)[:ends[0] + 1], list(flags)[:ends[0] + 1])]
-left = [((57, 297), 1)] + dip(57, 1) + [((57, 434), 1)]
-right = [((764, 434), 1)] + list(reversed(dip(764, -1))) + [((764, 297), 1)]
+left = [((57, 145), 1)] + dip(57, 1) + [((57, 575), 1)]
+right = [((764, 601), 1)] + list(reversed(dip(764, -1))) + [((764, 145), 1)]
 new = []
 skip = None
 for pt in outer:
-    if pt[0] == (57, 297):
-        new += left; skip = (57, 434); continue
-    if pt[0] == (764, 434):
-        new += right; skip = (764, 297); continue
+    if pt[0] == (57, 145):
+        new += left; skip = (57, 575); continue
+    if pt[0] == (764, 601):
+        new += right; skip = (764, 145); continue
     if skip:
         if pt[0] == skip: skip = None
         continue
