@@ -657,6 +657,17 @@ static void draw_charge(GContext *ctx, GRect b, const Theme *th, int p) {
                      GTextAlignmentCenter, NULL);
 }
 
+// While charging: a thin ring round the very edge, green from the top
+// clockwise as far as the battery is charged, a faint track for the rest.
+static void charge_ring(GContext *ctx, GRect b, const Theme *th) {
+  const int corner = PBL_IF_ROUND_ELSE(0, CORNER_R);
+  int pct = g_view.battery > 100 ? 100 : g_view.battery;
+  int32_t fill = (int32_t)((int64_t)FRAC * pct / 100);
+  graphics_context_set_antialiased(ctx, true);
+  edge_ring(ctx, b, 1, 2, corner, FRAC, th->dim);
+  edge_ring(ctx, b, 1, 2, corner, fill, charge_green(th));
+}
+
 void draw_face(Layer *layer, GContext *ctx) {
   GRect b = layer_get_bounds(layer);
   time_t now = g_view.now;
@@ -683,18 +694,19 @@ void draw_face(Layer *layer, GContext *ctx) {
   // drawing order. Turned, the text is drawn first and set aside, the ring is
   // drawn already turned with plain geometry (so it stays sharp), and the
   // text is turned and laid over it with smoothed edges.
-  // While charging, a thin green ring runs round the very edge, under all.
+  // While charging, a thin green ring runs round the very edge, under all,
+  // filled as far as the battery is charged.
   // It belongs to the screen, not the face, so it is never turned.
   const bool ring = g_view.charging;
   if (g_set.tilt % 360 == 0) {
-    if (ring) edge_ring(ctx, b, 1, 2, PBL_IF_ROUND_ELSE(0, CORNER_R), FRAC, charge_green(&th));
+    if (ring) charge_ring(ctx, b, &th);
     draw_track(ctx, b, &th, now);
     draw_text_layer(ctx, b, &th, now);
     return;
   }
   draw_text_layer(ctx, b, &th, now);
   bool turned = tilt_begin(ctx, b, th.bg);
-  if (ring) edge_ring(ctx, b, 1, 2, PBL_IF_ROUND_ELSE(0, CORNER_R), FRAC, charge_green(&th));
+  if (ring) charge_ring(ctx, b, &th);
   draw_track(ctx, b, &th, now);
   if (turned) tilt_end(ctx, b, g_set.tilt);
 }
