@@ -360,9 +360,9 @@ void draw_face(Layer *layer, GContext *ctx) {
   // CAP is the digit height (the height of the digit images), GAP the space
   // between two digits.
 #ifdef PBL_ROUND
-  const int CAP = 74, GAP = 11, MAX_W = 192, BAR_W = 166;
+  const int CAP = 75, GAP = 13, MAX_W = 192, BAR_W = 166;
 #else
-  const int CAP = 78, GAP = 12, MAX_W = 160, BAR_W = 174;
+  const int CAP = 78, GAP = 14, MAX_W = 160, BAR_W = 174;
 #endif
   const int HALF = 15;                 // centre line to the digits
   const int SMALL_CAP = 9, SMALL_PAD = 4, SMALL_GAP = 6;
