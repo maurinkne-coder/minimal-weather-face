@@ -40,6 +40,9 @@ static void settings_default(void) {
     .updates = 1,
     .interval = 30,
     .tilt = 0,
+    .battline = 1,
+    .stepbar = 1,
+    .stepgoal = 10000,
   };
 }
 
@@ -92,12 +95,21 @@ static void update_health(void) {
   g_view.steps = -1;
   g_view.heart = 0;
 #if defined(PBL_HEALTH)
-  if (g_set.corner == CORNER_STEPS) {
+  if (g_set.corner == CORNER_STEPS || g_set.stepbar) {
     time_t start = time_start_of_today(), end = time(NULL);
     if (health_service_metric_accessible(HealthMetricStepCount, start, end) & HealthServiceAccessibilityMaskAvailable) {
       g_view.steps = (int32_t)health_service_sum_today(HealthMetricStepCount);
     }
-  } else if (g_set.corner == CORNER_HEART) {
+    g_view.step_goal = g_set.stepgoal;
+    if (!g_view.step_goal) {
+      // Your usual steps for a whole day like today.
+      g_view.step_goal = (int32_t)health_service_sum_averaged(HealthMetricStepCount, start,
+                                                              start + SECONDS_PER_DAY,
+                                                              HealthServiceTimeScopeDailyWeekdayOrWeekend);
+    }
+    if (g_view.step_goal <= 0) g_view.step_goal = 10000;
+  }
+  if (g_set.corner == CORNER_HEART) {
     g_view.heart = (int32_t)health_service_peek_current_value(HealthMetricHeartRateBPM);
   }
 #endif
@@ -205,6 +217,9 @@ static bool read_settings(DictionaryIterator *it) {
   s.updates = read_int(it, MESSAGE_KEY_Updates, s.updates);
   s.interval = read_int(it, MESSAGE_KEY_Interval, s.interval);
   s.tilt = read_int(it, MESSAGE_KEY_Tilt, s.tilt);
+  s.battline = read_int(it, MESSAGE_KEY_BattLine, s.battline);
+  s.stepbar = read_int(it, MESSAGE_KEY_StepBar, s.stepbar);
+  s.stepgoal = read_int(it, MESSAGE_KEY_StepGoal, s.stepgoal);
   if (s.tilt <= -360 || s.tilt >= 360) s.tilt = 0;
   if (s.lang >= LANG_COUNT) s.lang = LANG_EN;
   g_set = s;
@@ -320,9 +335,9 @@ static void canvas_update(Layer *layer, GContext *ctx) {
 
 static void window_load(Window *window) {
 #ifdef PBL_ROUND
-  g_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CLOCK_88));
+  g_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CLOCK_86));
 #else
-  g_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CLOCK_92));
+  g_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CLOCK_88));
 #endif
   g_small_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SMALL_12));
   Layer *root = window_get_root_layer(window);

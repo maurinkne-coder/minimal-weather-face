@@ -316,11 +316,11 @@ void draw_face(Layer *layer, GContext *ctx) {
   // CAP is the digit height; PAD is the space the font leaves above the digits
   // inside its text box (both measured from the font at that size).
 #ifdef PBL_ROUND
-  const int CAP = 63, PAD = 26, BOX = 96, MAX_W = 192;
+  const int CAP = 62, PAD = 25, BOX = 94, MAX_W = 192, BAR_W = 140;
 #else
-  const int CAP = 66, PAD = 28, BOX = 100, MAX_W = 160;
+  const int CAP = 63, PAD = 26, BOX = 96, MAX_W = 160, BAR_W = 148;
 #endif
-  const int HALF = 11;                 // centre line to the digits
+  const int HALF = 18;                 // centre line to the digits
   const int SMALL_CAP = 9, SMALL_PAD = 4, SMALL_GAP = 7;
   const int cx = b.origin.x + b.size.w / 2;
   const int cy = b.origin.y + b.size.h / 2;
@@ -336,6 +336,31 @@ void draw_face(Layer *layer, GContext *ctx) {
   if (corner[0]) {
     draw_text_font(ctx, corner, g_small_font,
                    GRect(cx - 70, mm_top + CAP + SMALL_GAP - SMALL_PAD, 140, 18), th.dim);
+  }
+
+  // Battery line just above the info row, step goal bar just below it:
+  // a faint full-width track with the filled part on top.
+  if (g_set.battline) {
+    int pct = g_view.battery > 100 ? 100 : g_view.battery;
+    GRect r = GRect(cx - BAR_W / 2, cy - 14, BAR_W, 2);
+    graphics_context_set_fill_color(ctx, th.dim);
+    graphics_fill_rect(ctx, r, 0, GCornerNone);
+    GColor c = th.fg;
+#ifdef PBL_COLOR
+    if (pct <= 20 && !g_view.charging && g_set.theme != THEME_MONO) c = GColorRed;
+#endif
+    graphics_context_set_fill_color(ctx, c);
+    graphics_fill_rect(ctx, GRect(r.origin.x, r.origin.y, BAR_W * pct / 100, 2), 0, GCornerNone);
+  }
+  if (g_set.stepbar && g_view.steps >= 0) {
+    int32_t goal = g_view.step_goal > 0 ? g_view.step_goal : 10000;
+    int32_t done = g_view.steps > goal ? goal : g_view.steps;
+    GRect r = GRect(cx - BAR_W / 2, cy + 11, BAR_W, 3);
+    graphics_context_set_fill_color(ctx, th.dim);
+    graphics_fill_rect(ctx, r, 1, GCornersAll);
+    graphics_context_set_fill_color(ctx, th.accent);
+    int w = (int)(BAR_W * done / goal);
+    if (w > 0) graphics_fill_rect(ctx, GRect(r.origin.x, r.origin.y, w, 3), 1, GCornersAll);
   }
 
   // Info row: temperature in the main colour, then the smart line in the

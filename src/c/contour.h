@@ -44,7 +44,7 @@ enum { TEMP_C, TEMP_F };
 enum { RAIN_MM, RAIN_IN };
 enum { WIND_KMH, WIND_MPH, WIND_MS, WIND_KT, WIND_BFT };
 
-#define SETTINGS_VERSION 2
+#define SETTINGS_VERSION 3
 
 typedef struct {
   uint8_t version;
@@ -64,6 +64,9 @@ typedef struct {
   uint8_t updates;
   uint8_t interval;   // minutes
   int16_t tilt;       // degrees the face is turned clockwise
+  uint8_t battline;   // thin battery line above the info row
+  uint8_t stepbar;    // step goal bar below the info row
+  uint16_t stepgoal;  // steps, 0 = your usual daily steps
 } Settings;
 
 // ---- Things the face shows that come from the watch itself ----
@@ -76,6 +79,7 @@ typedef struct {
   bool charging;
   int32_t steps;
   int32_t heart;
+  int32_t step_goal;  // resolved goal for the step bar
 } ViewState;
 
 extern Settings g_set;

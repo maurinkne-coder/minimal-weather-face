@@ -43,6 +43,9 @@
       "Updates",
       "Interval",
       "Tilt",
+      "BattLine",
+      "StepBar",
+      "StepGoal",
       "Model",
       "LocMode",
       "City",
@@ -69,7 +72,7 @@
       "media": [
         {
           "type": "font",
-          "name": "FONT_CLOCK_88",
+          "name": "FONT_CLOCK_86",
           "file": "fonts/ContourDigits-Black.ttf",
           "characterRegex": "[0-9]",
           "trackingAdjust": -2,
@@ -79,7 +82,7 @@
         },
         {
           "type": "font",
-          "name": "FONT_CLOCK_92",
+          "name": "FONT_CLOCK_88",
           "file": "fonts/ContourDigits-Black.ttf",
           "characterRegex": "[0-9]",
           "trackingAdjust": -2,

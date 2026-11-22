@@ -31,7 +31,7 @@ typedef struct GContext GContext;
 typedef const char *GFont;
 typedef enum { GTextOverflowModeWordWrap, GTextOverflowModeTrailingEllipsis, GTextOverflowModeFill } GTextOverflowMode;
 typedef enum { GTextAlignmentLeft, GTextAlignmentCenter, GTextAlignmentRight } GTextAlignment;
-typedef enum { GCornerNone } GCornerMask;
+typedef enum { GCornerNone = 0, GCornersAll = 15 } GCornerMask;
 typedef enum { GOvalScaleModeFitCircle } GOvalScaleMode;
 
 #define FONT_KEY_GOTHIC_14 "gothic14"

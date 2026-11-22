@@ -75,6 +75,34 @@ module.exports = [
       },
       {
         type: 'toggle',
+        messageKey: 'BattLine',
+        label: 'Battery line',
+        description: 'A thin line just above the middle text that shrinks as the watch battery runs down.',
+        defaultValue: true
+      },
+      {
+        type: 'toggle',
+        messageKey: 'StepBar',
+        label: 'Step goal bar',
+        description: 'A bar just below the middle text that fills up as you walk towards your step goal.',
+        defaultValue: true
+      },
+      {
+        type: 'select',
+        messageKey: 'StepGoal',
+        label: 'Step goal',
+        defaultValue: '10000',
+        options: [
+          { label: 'My usual day (from Pebble Health)', value: '0' },
+          { label: '5,000', value: '5000' },
+          { label: '7,500', value: '7500' },
+          { label: '10,000', value: '10000' },
+          { label: '12,500', value: '12500' },
+          { label: '15,000', value: '15000' }
+        ]
+      },
+      {
+        type: 'toggle',
         messageKey: 'Anim',
         label: 'Animations',
         description: 'The chart draws itself when the face opens; a wrist flick walks through the coming hours. Always off in Quiet Time and below 20% battery.',
