@@ -263,8 +263,17 @@ module.exports = [
           { label: '7,500', value: '7500' },
           { label: '10,000', value: '10000' },
           { label: '12,500', value: '12500' },
-          { label: '15,000', value: '15000' }
+          { label: '15,000', value: '15000' },
+          { label: 'My own number (below)', value: 'own' }
         ]
+      },
+      {
+        type: 'input',
+        messageKey: 'StepGoalOwn',
+        label: 'My own step goal',
+        description: 'Used when the step goal above is set to "My own number". Between 100 and 60,000.',
+        defaultValue: '8000',
+        attributes: { type: 'number', min: 100, max: 60000, step: 100, placeholder: 'e.g. 8000' }
       },
       {
         type: 'select',

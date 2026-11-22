@@ -57,6 +57,7 @@
       "Model",
       "LocMode",
       "City",
+      "StepGoalOwn",
       "Request",
       "JsReady",
       "WxT0",

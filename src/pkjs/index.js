@@ -11,7 +11,7 @@ var DEFAULTS = {
   Theme: '0', Range: '24', Corner: '4', Anim: true,
   Frost: true, Gust: '50', Uv: '6', SunLine: true,
   Lang: '0', Clock: '0', TempUnit: '0', RainUnit: '0', WindUnit: '0',
-  Updates: true, Interval: '30', Tilt: '0', BattLine: '1', StepBar: true, StepGoal: '10000', StepColor: '0', RainAlert: '0',
+  Updates: true, Interval: '30', Tilt: '0', BattLine: '1', StepBar: true, StepGoal: '10000', StepGoalOwn: '8000', StepColor: '0', RainAlert: '0',
   OwnColors: false, TextColor: 'FFFFFF', AccentColor: '55FFFF', ChargeBuzz: true, Buzz80: '3', BuzzFull: '5', BarSlot: '30', SymLeft: '1', SymRight: '2', Model: 'best_match', LocMode: 'gps', City: ''
 };
 
@@ -74,9 +74,19 @@ function pump() {
   });
 }
 
+// The step goal: a preset, 0 for the usual day from Pebble Health, or the
+// number typed in (rounded, 100 to 60,000).
+function stepGoal(s) {
+  if (s.StepGoal !== 'own') return toInt(s.StepGoal);
+  var n = parseInt(String(s.StepGoalOwn).replace(/[^0-9]/g, ''), 10);
+  if (!(n > 0)) return 10000;
+  return Math.max(100, Math.min(60000, n));
+}
+
 function sendSettings(s) {
   var dict = {};
   WATCH_KEYS.forEach(function (k) { dict[k] = toInt(s[k]); });
+  dict.StepGoal = stepGoal(s);
   send(dict);
 }
 
@@ -294,4 +304,4 @@ Pebble.addEventListener('webviewclosed', function (e) {
   fetchWeather();
 });
 
-module.exports = { pack: pack, startIndex: startIndex, forecastUrl: forecastUrl };
+module.exports = { stepGoal: stepGoal, pack: pack, startIndex: startIndex, forecastUrl: forecastUrl };
