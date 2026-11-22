@@ -36,7 +36,7 @@ fonts, so the lettering differs a little from the watch._
 - **Battery line and step bar**: a thin line just above the middle text shows the watch battery: plain (red at 20% or less) or colourful (green, orange below 30%, red below 10%), and a bar just below it fills towards your step goal (a fixed goal or your usual day from Pebble Health). Both can be turned off.
 - **Clock**: big bold stacked hours over minutes in a wide, square "techno" style (Contour Digits, a modified Orbitron Black), as large as fits inside the rain chart. The date and the extra line use small capitals of the same font, with the
   date small above. Between them is a thin info row with the temperature and
-  the smart line, and an optional extra line (battery, steps or heart rate)
+  the smart line, and a bottom line (by default today's low, the temperature now in bright and today's high; or battery, steps or heart rate)
   sits below.
 - **Wrist flick**: a cursor walks along the line, and the middle shows the
   time, temperature and rain for each hour.

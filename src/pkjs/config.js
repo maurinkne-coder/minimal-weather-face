@@ -65,9 +65,10 @@ module.exports = [
         messageKey: 'Corner',
         label: 'Bottom line',
         description: 'Small text at the very bottom, under the minutes.',
-        defaultValue: '1',
+        defaultValue: '4',
         options: [
           { label: 'Nothing', value: '0' },
+          { label: 'Temperature: low, now, high today', value: '4' },
           { label: 'Battery', value: '1' },
           { label: 'Steps today', value: '2' },
           { label: 'Heart rate', value: '3' }

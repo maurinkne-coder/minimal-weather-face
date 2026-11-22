@@ -25,6 +25,10 @@ typedef struct {
   uint8_t sun_count;
   uint32_t rise[WX_SUN];
   uint32_t set[WX_SUN];
+  uint32_t day0;               // start of the first day of hi/lo (local midnight)
+  uint8_t hilo_count;
+  int16_t hi[WX_SUN];          // 0.1 degC, daily high
+  int16_t lo[WX_SUN];          // 0.1 degC, daily low
   int16_t cur_temp;            // 0.1 degC
   uint8_t cur_code;
   uint32_t cur_t;              // time of the "current" observation
@@ -37,7 +41,7 @@ enum { WX_OK = 0, WX_NO_LOCATION = 1, WX_NO_NETWORK = 2 };
 // ---- Settings ----
 
 enum { THEME_MIDNIGHT, THEME_DAYLIGHT, THEME_MONO, THEME_GRAPHITE, THEME_AUTO };
-enum { CORNER_NONE, CORNER_BATTERY, CORNER_STEPS, CORNER_HEART };
+enum { CORNER_NONE, CORNER_BATTERY, CORNER_STEPS, CORNER_HEART, CORNER_TEMP };
 enum { LANG_EN, LANG_DE, LANG_FR, LANG_IT, LANG_ES, LANG_COUNT };
 enum { CLOCK_AUTO, CLOCK_24, CLOCK_12 };
 enum { TEMP_C, TEMP_F };
@@ -99,6 +103,7 @@ int wx_range_hours(void);            // hours on the ring for this watch
 void text_date(char *buf, size_t n, time_t now);
 void text_clock_parts(char *h, size_t hn, char *m, size_t mn, time_t now);
 void text_temp(char *buf, size_t n, time_t now);
+bool text_hilo(char *lo, size_t ln, char *hi, size_t hn, time_t now);  // today's low and high
 void text_smart(char *buf, size_t n, time_t now);
 void text_corner(char *buf, size_t n);
 void text_scrub(char *line1, size_t n1, char *line2, size_t n2, time_t t);

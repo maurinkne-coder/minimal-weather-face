@@ -26,7 +26,7 @@ static void settings_default(void) {
     .version = SETTINGS_VERSION,
     .theme = THEME_MIDNIGHT,
     .range = 24,
-    .corner = CORNER_BATTERY,
+    .corner = CORNER_TEMP,
     .anim = 1,
     .frost = 1,
     .gust = 50,
@@ -185,6 +185,14 @@ static bool read_weather(DictionaryIterator *it) {
   size_t sn = read_bytes(it, MESSAGE_KEY_WxSet, sun, sizeof(sun)) / 4;
   for (size_t i = 0; i < sn; i++) w.set[i] = le32(sun + 4 * i);
   w.sun_count = (uint8_t)(rn < sn ? rn : sn);
+
+  uint8_t hl[WX_SUN * 2];
+  w.day0 = (uint32_t)read_int(it, MESSAGE_KEY_WxDay0, 0);
+  size_t hn = read_bytes(it, MESSAGE_KEY_WxHi, hl, sizeof(hl)) / 2;
+  for (size_t i = 0; i < hn; i++) w.hi[i] = (int16_t)(hl[2 * i] | (hl[2 * i + 1] << 8));
+  size_t ln = read_bytes(it, MESSAGE_KEY_WxLo, hl, sizeof(hl)) / 2;
+  for (size_t i = 0; i < ln; i++) w.lo[i] = (int16_t)(hl[2 * i] | (hl[2 * i + 1] << 8));
+  w.hilo_count = w.day0 ? (uint8_t)(hn < ln ? hn : ln) : 0;
 
   w.cur_temp = (int16_t)read_int(it, MESSAGE_KEY_WxCurTemp, 0);
   w.cur_code = (uint8_t)read_int(it, MESSAGE_KEY_WxCurCode, 0);

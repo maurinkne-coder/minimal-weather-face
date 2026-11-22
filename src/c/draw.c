@@ -304,7 +304,9 @@ void draw_face(Layer *layer, GContext *ctx) {
   if (g_view.scrub >= 0) {
     text_scrub(left, sizeof(left), right, sizeof(right), now + (time_t)g_view.scrub * 360);
   } else {
-    text_temp(left, sizeof(left), now);
+    // With the temperature at the bottom, the middle row is just the smart line.
+    if (g_set.corner == CORNER_TEMP) left[0] = '\0';
+    else text_temp(left, sizeof(left), now);
     text_smart(right, sizeof(right), now);
   }
   text_corner(corner, sizeof(corner));
@@ -333,9 +335,31 @@ void draw_face(Layer *layer, GContext *ctx) {
                  GRect(cx - 70, hh_top - SMALL_GAP - SMALL_CAP - SMALL_PAD, 140, 18), th.dim);
   draw_text_font(ctx, hh, g_time_font, GRect(b.origin.x, hh_top - PAD, b.size.w, BOX), th.fg);
   draw_text_font(ctx, mm, g_time_font, GRect(b.origin.x, mm_top - PAD, b.size.w, BOX), th.fg);
-  if (corner[0]) {
-    draw_text_font(ctx, corner, g_small_font,
-                   GRect(cx - 70, mm_top + CAP + SMALL_GAP - SMALL_PAD, 140, 18), th.dim);
+  const int corner_y = mm_top + CAP + SMALL_GAP - SMALL_PAD;
+  if (g_set.corner == CORNER_TEMP) {
+    // Today's low, now and high: the current temperature bright in the middle.
+    char lo[12], cur[12], hi[12];
+    text_temp(cur, sizeof(cur), now);
+    GRect wide = GRect(0, 0, 200, 18);
+    if (text_hilo(lo, sizeof(lo), hi, sizeof(hi), now)) {
+      const int GAP = 12;
+      int wl = graphics_text_layout_get_content_size(lo, g_small_font, wide, GTextOverflowModeFill, GTextAlignmentLeft).w;
+      int wc = graphics_text_layout_get_content_size(cur, g_small_font, wide, GTextOverflowModeFill, GTextAlignmentLeft).w;
+      int wh = graphics_text_layout_get_content_size(hi, g_small_font, wide, GTextOverflowModeFill, GTextAlignmentLeft).w;
+      int x = cx - (wl + wc + wh + 2 * GAP) / 2;
+      graphics_context_set_text_color(ctx, th.dim);
+      graphics_draw_text(ctx, lo, g_small_font, GRect(x, corner_y, wl + 2, 18), GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+      x += wl + GAP;
+      graphics_context_set_text_color(ctx, th.fg);
+      graphics_draw_text(ctx, cur, g_small_font, GRect(x, corner_y, wc + 2, 18), GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+      x += wc + GAP;
+      graphics_context_set_text_color(ctx, th.dim);
+      graphics_draw_text(ctx, hi, g_small_font, GRect(x, corner_y, wh + 2, 18), GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+    } else {
+      draw_text_font(ctx, cur, g_small_font, GRect(cx - 70, corner_y, 140, 18), th.fg);
+    }
+  } else if (corner[0]) {
+    draw_text_font(ctx, corner, g_small_font, GRect(cx - 70, corner_y, 140, 18), th.dim);
   }
 
   // Battery line just above the info row, step goal bar just below it:
@@ -393,7 +417,7 @@ void draw_face(Layer *layer, GContext *ctx) {
       wr = graphics_text_layout_get_content_size(right, f, wide, GTextOverflowModeTrailingEllipsis,
                                                  GTextAlignmentLeft).w;
     }
-    int gap = wr ? 5 : 0;
+    int gap = (wl && wr) ? 5 : 0;
     if (wl + gap + wr > MAX_W) wr = MAX_W - wl - gap;
     int x0 = cx - (wl + gap + wr) / 2;
     graphics_context_set_text_color(ctx, th.fg);

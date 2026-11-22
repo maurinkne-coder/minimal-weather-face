@@ -8,7 +8,7 @@ var M15_SLOTS = 8;
 var SUN_DAYS = 4;
 
 var DEFAULTS = {
-  Theme: '0', Range: '24', Corner: '1', Anim: true,
+  Theme: '0', Range: '24', Corner: '4', Anim: true,
   Frost: true, Gust: '50', Uv: '6', SunLine: true,
   Lang: '0', Clock: '0', TempUnit: '0', RainUnit: '0', WindUnit: '0',
   Updates: true, Interval: '30', Tilt: '0', BattLine: '1', StepBar: true, StepGoal: '10000', Model: 'best_match', LocMode: 'gps', City: ''
@@ -157,7 +157,7 @@ function forecastUrl(loc, model) {
     '&current=temperature_2m,weather_code' +
     '&hourly=temperature_2m,precipitation,precipitation_probability,weather_code,wind_gusts_10m,uv_index,is_day' +
     '&minutely_15=precipitation' +
-    '&daily=sunrise,sunset' +
+    '&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min' +
     '&timezone=auto&timeformat=unixtime&forecast_days=5' +
     (model && model !== 'best_match' ? '&models=' + encodeURIComponent(model) : '');
 }
@@ -210,6 +210,22 @@ function pack(j) {
   if (d && d.sunrise && d.sunset) {
     dict.WxRise = u32(d.sunrise.slice(0, SUN_DAYS).map(function (v) { return v || 0; }));
     dict.WxSet = u32(d.sunset.slice(0, SUN_DAYS).map(function (v) { return v || 0; }));
+  }
+
+  if (d && d.time && d.temperature_2m_max && d.temperature_2m_min) {
+    var hi = [], lo = [];
+    for (var di = 0; di < SUN_DAYS && di < d.time.length; di++) {
+      var mx = d.temperature_2m_max[di], mn = d.temperature_2m_min[di];
+      if (mx === null || mx === undefined || mn === null || mn === undefined) break;
+      var a = Math.round(mx * 10) & 0xffff, b = Math.round(mn * 10) & 0xffff;
+      hi.push(a & 0xff, (a >> 8) & 0xff);
+      lo.push(b & 0xff, (b >> 8) & 0xff);
+    }
+    if (hi.length) {
+      dict.WxDay0 = d.time[0];
+      dict.WxHi = hi;
+      dict.WxLo = lo;
+    }
   }
 
   if (j.current && j.current.temperature_2m !== null && j.current.temperature_2m !== undefined) {

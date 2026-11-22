@@ -56,6 +56,8 @@ static void fake(time_t now, int scenario) {
     g_wx.rise[d] = (uint32_t)(mid + 7 * 3600 + 20 * 60); g_wx.set[d] = (uint32_t)(mid + 16 * 3600 + 45 * 60);
   }
   g_wx.sun_count = 4;
+  g_wx.day0 = (uint32_t)(now - now % 86400); g_wx.hilo_count = 4;
+  for (int d = 0; d < 4; d++) { g_wx.lo[d] = (int16_t)(-20 - 10 * d); g_wx.hi[d] = (int16_t)(110 - 5 * d); }
   g_wx.cur_t = (uint32_t)now; g_wx.cur_temp = g_wx.temp[0]; g_wx.cur_code = g_wx.code[0];
 }
 

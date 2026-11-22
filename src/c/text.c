@@ -206,6 +206,16 @@ void text_temp(char *buf, size_t n, time_t now) {
   fmt_temp(buf, n, fresh ? g_wx.cur_temp : g_wx.temp[i]);
 }
 
+bool text_hilo(char *lo, size_t ln, char *hi, size_t hn, time_t now) {
+  if (!g_wx.hilo_count || now < (time_t)g_wx.day0) return false;
+  // +2 h so a 23 h or 25 h day (clock change) still lands on the right day.
+  int d = (int)((now - (time_t)g_wx.day0 + 7200) / 86400);
+  if (d >= g_wx.hilo_count) return false;
+  fmt_temp(lo, ln, g_wx.lo[d]);
+  fmt_temp(hi, hn, g_wx.hi[d]);
+  return true;
+}
+
 // Appends the heaviest hour of the coming rain spell, like " · 2.8 mm".
 static void add_amount(char *buf, size_t n, int i) {
   int peak = 0;
