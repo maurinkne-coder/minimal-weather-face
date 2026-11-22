@@ -69,6 +69,7 @@ static inline bool gcolor_equal(GColor a, GColor b) { return a.argb == b.argb; }
 #define GColorPictonBlue ((GColor){GColorPictonBlueARGB8})
 #define GColorCeleste ((GColor){GColorCelesteARGB8})
 #define GColorIcterine ((GColor){GColorIcterineARGB8})
+#define GColorChromeYellow ((GColor){GColorChromeYellowARGB8})
 #define GColorElectricBlue ((GColor){GColorElectricBlueARGB8})
 #define GColorOxfordBlue ((GColor){GColorOxfordBlueARGB8})
 

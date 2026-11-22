@@ -12,6 +12,7 @@
 typedef struct {
   GColor bg, fg, dim, accent;
   GColor base, light, medium, heavy;   // rain: base line, < 1, 1-4, >= 4 mm/h
+  GColor steps;                        // step goal bar, warm so it never looks like rain
 } Theme;
 
 // ---------------------------------------------------------------------------
@@ -137,16 +138,16 @@ static Theme theme_for(int id) {
   switch (id) {
     case THEME_DAYLIGHT:
       return (Theme){ GColorWhite, GColorBlack, GColorDarkGray, GColorCobaltBlue,
-                      GColorLightGray, GColorPictonBlue, GColorBlue, GColorOxfordBlue };
+                      GColorLightGray, GColorPictonBlue, GColorBlue, GColorOxfordBlue, GColorOrange };
     case THEME_MONO:
       return (Theme){ GColorBlack, GColorWhite, GColorLightGray, GColorWhite,
-                      GColorDarkGray, GColorDarkGray, GColorLightGray, GColorWhite };
+                      GColorDarkGray, GColorDarkGray, GColorLightGray, GColorWhite, GColorWhite };
     case THEME_GRAPHITE:
       return (Theme){ GColorDarkGray, GColorWhite, GColorLightGray, GColorIcterine,
-                      GColorLightGray, GColorPictonBlue, GColorElectricBlue, GColorWhite };
+                      GColorLightGray, GColorPictonBlue, GColorElectricBlue, GColorWhite, GColorChromeYellow };
     default: // THEME_MIDNIGHT
       return (Theme){ GColorBlack, GColorWhite, GColorDarkGray, GColorCeleste,
-                      GColorCobaltBlue, GColorCobaltBlue, GColorPictonBlue, GColorElectricBlue };
+                      GColorCobaltBlue, GColorCobaltBlue, GColorPictonBlue, GColorElectricBlue, GColorChromeYellow };
   }
 }
 
@@ -392,7 +393,7 @@ void draw_face(Layer *layer, GContext *ctx) {
     GRect r = GRect(cx - BAR_W / 2, cy + 8, BAR_W, 2);
     graphics_context_set_fill_color(ctx, th.dim);
     graphics_fill_rect(ctx, r, 0, GCornerNone);
-    graphics_context_set_fill_color(ctx, th.accent);
+    graphics_context_set_fill_color(ctx, th.steps);
     int w = (int)(BAR_W * done / goal);
     if (w > 0) graphics_fill_rect(ctx, GRect(r.origin.x, r.origin.y, w, 2), 0, GCornerNone);
   }
