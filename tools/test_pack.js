@@ -48,3 +48,12 @@ assert.ok(app.forecastUrl({ lat: 47.3769, lon: 8.5417 }, 'icon_seamless').indexO
 hourly.temperature_2m = hourly.temperature_2m.map(function () { return null; });
 assert.strictEqual(app.pack(j), null);
 console.log('pack ok');
+
+// Step goal: presets pass through, "own" uses the typed number, clamped.
+assert.strictEqual(app.stepGoal({ StepGoal: '7500', StepGoalOwn: '8000' }), 7500);
+assert.strictEqual(app.stepGoal({ StepGoal: '0', StepGoalOwn: '8000' }), 0);
+assert.strictEqual(app.stepGoal({ StepGoal: 'own', StepGoalOwn: '8,250' }), 8250);
+assert.strictEqual(app.stepGoal({ StepGoal: 'own', StepGoalOwn: '12' }), 100);
+assert.strictEqual(app.stepGoal({ StepGoal: 'own', StepGoalOwn: '999999' }), 60000);
+assert.strictEqual(app.stepGoal({ StepGoal: 'own', StepGoalOwn: '' }), 10000);
+console.log('step goal ok');
