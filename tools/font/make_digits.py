@@ -36,7 +36,7 @@ X0, X1, Y0, Y1 = 57, 764, 0, 720       # same box as the other digits
 RC = 150                               # outer corner radius
 MID, VN, VD = 360, 34, 44              # notch: middle, half height, depth
 VR = 16                                # rounding where the side turns into the notch
-SH, SX0, SX1, CH = 135, 200, 621, 18   # slot height, slot x range, chamfer
+SH, SX0, SX1, CH = 110, 215, 606, 16   # slot height, slot x range, chamfer
 WALL = (Y1 - Y0 - 2 * SH) // 3         # equal top, middle and bottom bars
 
 pen = TTGlyphPen(None)
