@@ -338,32 +338,36 @@ void draw_face(Layer *layer, GContext *ctx) {
                    GRect(cx - 70, mm_top + CAP + SMALL_GAP - SMALL_PAD, 140, 18), th.dim);
   }
 
-  // Info row: temperature in small capitals, then the smart line.
+  // Info row: temperature in the main colour, then the smart line in the
+  // accent colour. Both use the same font so they share one baseline.
   {
-    upper_utf8(left);
-    GFont fl = g_small_font;
-    GFont fr = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+    GFont f = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+    int top = cy - 13;
     GRect wide = GRect(0, 0, 400, 24);
-    int wl = graphics_text_layout_get_content_size(left, fl, wide, GTextOverflowModeTrailingEllipsis,
+    int wl = graphics_text_layout_get_content_size(left, f, wide, GTextOverflowModeTrailingEllipsis,
                                                    GTextAlignmentLeft).w;
-    int wr = right[0] ? graphics_text_layout_get_content_size(right, fr, wide,
+    int wr = right[0] ? graphics_text_layout_get_content_size(right, f, wide,
                                                               GTextOverflowModeTrailingEllipsis,
                                                               GTextAlignmentLeft).w : 0;
-    bool small_right = false;
-    if (wl + 8 + wr > MAX_W && right[0]) {
-      // Too long: drop to the smaller font before cutting anything off.
-      fr = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
-      small_right = true;
-      wr = graphics_text_layout_get_content_size(right, fr, wide, GTextOverflowModeTrailingEllipsis,
+    if (wl + 5 + wr > MAX_W && right[0]) {
+      // Too long: drop both to the smaller font before cutting anything off.
+      f = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
+      top = cy - 9;
+      wl = graphics_text_layout_get_content_size(left, f, wide, GTextOverflowModeTrailingEllipsis,
+                                                 GTextAlignmentLeft).w;
+      wr = graphics_text_layout_get_content_size(right, f, wide, GTextOverflowModeTrailingEllipsis,
                                                  GTextAlignmentLeft).w;
     }
-    int gap = wr ? 8 : 0;
+    int gap = wr ? 5 : 0;
     if (wl + gap + wr > MAX_W) wr = MAX_W - wl - gap;
     int x0 = cx - (wl + gap + wr) / 2;
-    draw_text_font(ctx, left, fl, GRect(x0 - 2, cy - SMALL_CAP / 2 - SMALL_PAD, wl + 4, 18), th.fg);
+    graphics_context_set_text_color(ctx, th.fg);
+    graphics_draw_text(ctx, left, f, GRect(x0, top, wl + 2, 24), GTextOverflowModeTrailingEllipsis,
+                       GTextAlignmentLeft, NULL);
     if (wr > 0) {
-      int top = small_right ? cy - 9 : cy - 13;
-      draw_text_font(ctx, right, fr, GRect(x0 + wl + gap - 2, top, wr + 4, 24), th.accent);
+      graphics_context_set_text_color(ctx, th.accent);
+      graphics_draw_text(ctx, right, f, GRect(x0 + wl + gap, top, wr + 2, 24),
+                         GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
     }
   }
 

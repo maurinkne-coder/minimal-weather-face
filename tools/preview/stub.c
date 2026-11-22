@@ -31,8 +31,8 @@ void graphics_draw_line(GContext *c, GPoint a, GPoint b) { printf("[\"line\",%d,
 void graphics_fill_radial(GContext *c, GRect r, GOvalScaleMode m, uint16_t t, int32_t a0, int32_t a1) { (void)m;
   printf("[\"radial\",%d,%d,%d,%d,%d,%d,%d,%d]\n", r.origin.x, r.origin.y, r.size.w, r.size.h, t, a0, a1, c->fill.argb); }
 static void jstr(const char *s) { putchar('"'); for (; *s; s++) { if (*s == '"' || *s == '\\') putchar('\\'); putchar(*s); } putchar('"'); }
-void graphics_draw_text(GContext *c, const char *t, GFont f, GRect r, GTextOverflowMode o, GTextAlignment a, void *x) { (void)o; (void)a; (void)x;
-  printf("[\"text\","); jstr(t); printf(",\"%s\",%d,%d,%d,%d,%d]\n", f, r.origin.x, r.origin.y, r.size.w, r.size.h, c->text.argb); }
+void graphics_draw_text(GContext *c, const char *t, GFont f, GRect r, GTextOverflowMode o, GTextAlignment a, void *x) { (void)o; (void)x;
+  printf("[\"text\","); jstr(t); printf(",\"%s\",%d,%d,%d,%d,%d,%d]\n", f, r.origin.x, r.origin.y, r.size.w, r.size.h, c->text.argb, a == GTextAlignmentLeft); }
 
 // Synthetic forecast: mild day, cooling to frost overnight, rain in the afternoon.
 static void fake(time_t now, int scenario) {

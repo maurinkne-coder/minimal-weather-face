@@ -17,10 +17,41 @@ FONTS = {  # key: (file, px size, horizontal squeeze, y offset)
 def col(a):
     return tuple(((a >> s) & 3) * 85 for s in (4, 2, 0))
 
+def text_width(s, f):
+    fn, size, sq, off = FONTS[f]
+    font = ImageFont.truetype(LIB + fn, size * S)
+    return font.getlength(s) * sq / S
+
+def group_rows(log):
+    """Left-aligned texts on one line form a row: the C side placed them with
+    rough width guesses, so lay them out again with real widths, centred on
+    the same middle and with the same gaps the code meant (5 px)."""
+    out, i = [], 0
+    while i < len(log):
+        c = log[i]
+        if c[0] == "text" and len(c) > 8 and c[8] and c[2] in FONTS:
+            row = [c]
+            while i + 1 < len(log) and log[i + 1][0] == "text" and len(log[i + 1]) > 8 \
+                    and log[i + 1][8] and log[i + 1][4] == c[4]:
+                i += 1
+                row.append(log[i])
+            mid = (row[0][3] + row[-1][3] + row[-1][5]) / 2
+            ws = [text_width(r[1], r[2]) for r in row]
+            total = sum(ws) + 5 * (len(row) - 1)
+            x = mid - total / 2
+            for r, wd in zip(row, ws):
+                out.append(["text", r[1], r[2], x, r[4], wd + 1, r[6], r[7]])
+                x += wd + 5
+        else:
+            out.append(c)
+        i += 1
+    return out
+
 def render(log, w, h, round_, out):
     img = Image.new("RGB", (w * S, h * S), (0, 0, 0))
     d = ImageDraw.Draw(img)
     overflow = []
+    log = group_rows(log)
     for c in log:
         k = c[0]
         if k == "rect":
@@ -60,7 +91,7 @@ def render(log, w, h, round_, out):
             img = img.rotate(-deg, resample=Image.NEAREST, center=(w * S / 2, h * S / 2), fillcolor=col(a))
             d = ImageDraw.Draw(img)
         elif k == "text" and (c[2].startswith("clock") or c[2].startswith("small")):
-            _, s, f, x, y, bw, bh, a = c
+            _, s, f, x, y, bw, bh, a = c[:8]
             size = int(f[5:])
             track = -2 if f.startswith("clock") else 1
             font = ImageFont.truetype(os.path.join(HERE, "../../resources/fonts/ContourDigits-Black.ttf"), size * S)
@@ -73,7 +104,7 @@ def render(log, w, h, round_, out):
                 d.text((px, y * S), ch, font=font, fill=col(a))
                 px += a_
         elif k == "text":
-            _, s, f, x, y, bw, bh, a = c
+            _, s, f, x, y, bw, bh, a = c[:8]
             fn, size, sq, off = FONTS[f]
             font = ImageFont.truetype(LIB + fn, size * S)
             tw = d.textlength(s, font=font) * sq
