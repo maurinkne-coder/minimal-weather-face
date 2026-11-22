@@ -371,9 +371,9 @@ static void canvas_update(Layer *layer, GContext *ctx) {
 
 static void window_load(Window *window) {
 #ifdef PBL_ROUND
-  g_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CLOCK_86));
+  g_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CLOCK_103));
 #else
-  g_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CLOCK_88));
+  g_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CLOCK_108));
 #endif
   g_small_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SMALL_12));
   Layer *root = window_get_root_layer(window);

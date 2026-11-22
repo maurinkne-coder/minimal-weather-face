@@ -4,9 +4,9 @@
 
 Settings g_set; Weather g_wx; ViewState g_view;
 #ifdef PBL_ROUND
-GFont g_time_font = "clock86";
+GFont g_time_font = "clock103";
 #else
-GFont g_time_font = "clock88";
+GFont g_time_font = "clock108";
 #endif
 GFont g_small_font = "small12";
 static int W, H;

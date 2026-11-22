@@ -354,18 +354,18 @@ void draw_face(Layer *layer, GContext *ctx) {
   text_corner(corner, sizeof(corner));
 
   // Stacked clock, everything centred on the screen: the info row sits on the
-  // middle line, hours above it and minutes below it as large as the space
-  // inside the rain chart allows, then the date on top and the extra line at
+  // middle line, hours above it and minutes below it as large as the screen
+  // allows (the rounded digit corners reach into the rain chart), then the date on top and the extra line at
   // the bottom in small capitals of the same blocky font.
   // CAP is the digit height; PAD is the space the font leaves above the digits
   // inside its text box (both measured from the font at that size).
 #ifdef PBL_ROUND
-  const int CAP = 62, PAD = 25, BOX = 94, MAX_W = 192, BAR_W = 140;
+  const int CAP = 74, PAD = 31, BOX = 112, MAX_W = 192, BAR_W = 166;
 #else
-  const int CAP = 63, PAD = 26, BOX = 96, MAX_W = 160, BAR_W = 148;
+  const int CAP = 78, PAD = 32, BOX = 116, MAX_W = 160, BAR_W = 174;
 #endif
-  const int HALF = 18;                 // centre line to the digits
-  const int SMALL_CAP = 9, SMALL_PAD = 4, SMALL_GAP = 7;
+  const int HALF = 15;                 // centre line to the digits
+  const int SMALL_CAP = 9, SMALL_PAD = 4, SMALL_GAP = 6;
   const int cx = b.origin.x + b.size.w / 2;
   const int cy = b.origin.y + b.size.h / 2;
   const int hh_top = cy - HALF - CAP;
@@ -408,7 +408,7 @@ void draw_face(Layer *layer, GContext *ctx) {
   // a faint full-width track with the filled part on top.
   if (g_set.battline) {
     int pct = g_view.battery > 100 ? 100 : g_view.battery;
-    GRect r = GRect(cx - BAR_W / 2, cy - 14, BAR_W, 2);
+    GRect r = GRect(cx - BAR_W / 2, cy - 11, BAR_W, 2);
     graphics_context_set_fill_color(ctx, th.dim);
     graphics_fill_rect(ctx, r, 0, GCornerNone);
     GColor c = th.fg;

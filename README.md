@@ -34,7 +34,7 @@ fonts, so the lettering differs a little from the watch._
 - **Rain amounts**: when rain is coming, the smart line adds the heaviest
   hour of the spell, like `Rain in 45 min · 2.8 mm`.
 - **Battery line and step bar**: a thin line just above the middle text shows the watch battery: plain (red at 20% or less) or colourful (green, orange below 30%, red below 10%), and a bar just below it fills towards your step goal (a fixed goal or your usual day from Pebble Health). Both can be turned off.
-- **Clock**: big bold stacked hours over minutes in a wide, square "techno" style (Contour Digits, a modified Orbitron Black), as large as fits inside the rain chart. The date and the extra line use small capitals of the same font, with the
+- **Clock**: big bold stacked hours over minutes in a wide, square "techno" style (Contour Digits, a modified Orbitron Black), as large as the screen allows (the digit corners reach into the rain chart). The date and the extra line use small capitals of the same font, with the
   date small above. Between them is a thin info row with the temperature and
   the smart line, and a bottom line (by default today's low, the temperature now in bright and today's high; or battery, steps or heart rate)
   sits below.

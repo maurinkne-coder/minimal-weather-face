@@ -47,7 +47,7 @@ GBitmapDataRowInfo gbitmap_get_data_row_info(const GBitmap*, uint16_t);
 GBitmap *graphics_capture_frame_buffer(GContext*); bool graphics_release_frame_buffer(GContext*, GBitmap*);
 void graphics_context_set_compositing_mode(GContext*, GCompOp);
 void graphics_draw_rotated_bitmap(GContext*, GBitmap*, GPoint, int32_t, GPoint);
-enum { RESOURCE_ID_FONT_CLOCK_86 = 1, RESOURCE_ID_FONT_CLOCK_88 = 2, RESOURCE_ID_FONT_SMALL_12 = 3 };
+enum { RESOURCE_ID_FONT_CLOCK_103 = 1, RESOURCE_ID_FONT_CLOCK_108 = 2, RESOURCE_ID_FONT_SMALL_12 = 3 };
 ResHandle resource_get_handle(uint32_t); GFont fonts_load_custom_font(ResHandle); void fonts_unload_custom_font(GFont);
 #define SECONDS_PER_DAY 86400
 typedef struct { const uint32_t *durations; uint32_t num_segments; } VibePattern; void vibes_enqueue_custom_pattern(VibePattern);
