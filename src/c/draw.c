@@ -1,12 +1,12 @@
 #include "contour.h"
 
-// The face: an hourly rain bar chart round the edge of the screen, starting at
-// the dot at the top ("now") and running clockwise into the coming hours.
-// Bars grow inward from a faint base line: the longer the bar, the more rain.
-// The colour grades the amount (light < 1 mm/h, medium 1-4, heavy >= 4), solid
-// bars are likely rain and outlined bars unlikely rain, and each rain spell is
-// labelled with its heaviest hour in mm (or inch). Small dots mark 00, 06, 12
-// and 18 o'clock.
+// The face: a rain bar chart round the edge of the screen in 30-minute slots,
+// starting at the dot at the top ("now") and running clockwise into the coming
+// hours. Dry slots are faint dashes along the edge; rainy slots grow a bar
+// inward: the longer the bar, the more rain. The colour grades the amount
+// (light < 1 mm/h, medium 1-4, heavy >= 4), solid bars are likely rain and
+// outlined bars unlikely rain, and each rain spell is labelled with its
+// heaviest hour in mm (or inch).
 
 #define FRAC 65536
 
@@ -27,7 +27,6 @@ typedef struct {
 #define RAIN_DEPTH 15
 #define CORNER_R 18
 #endif
-#define TICK_IN (RAIN_EDGE + RAIN_DEPTH + 5)
 #define BASE_MID (RAIN_EDGE + RAIN_DEPTH / 2)
 
 // Text in the middle, as drawn upright, so labels can keep clear of it.
@@ -262,58 +261,65 @@ static void draw_rain_label(GContext *ctx, GRect b, const Theme *th, time_t now,
   }
 }
 
+// Rain rate (0.1 mm per hour) for the half hour starting at `slot`. The next
+// two hours use the 15-minute data when it covers them; later slots use the
+// hourly forecast.
+static int slot_rain(time_t slot, bool *likely) {
+  int k = wx_index_at(slot);
+  uint8_t pr = k >= 0 ? g_wx.prob[k] : 0;
+  *likely = pr == PROB_UNKNOWN || pr >= 50;
+  if (g_wx.m15_count) {
+    int32_t d = (int32_t)(slot - (time_t)g_wx.m15_t0);
+    if (d >= 0 && d % 900 == 0 && d / 900 + 1 < g_wx.m15_count) {
+      int i = d / 900;
+      return (g_wx.m15[i] + g_wx.m15[i + 1]) * 2;   // two quarters -> per hour
+    }
+  }
+  return k >= 0 ? g_wx.precip[k] : 0;
+}
+
 static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
   const int range = wx_range_hours();
   const int range_s = range * 3600;
-  const int steps = range * PBL_IF_ROUND_ELSE(6, 4);
-  const int shown = steps * g_view.reveal / 1000;
-
   graphics_context_set_antialiased(ctx, true);
 
-  // Time dots at 00, 06, 12 and 18 local time, just inside the line.
-  graphics_context_set_fill_color(ctx, th->dim);
-  for (time_t t = now - now % 3600 + 3600; t < now + range_s; t += 3600) {
-    struct tm *tm = localtime(&t);
-    if (tm->tm_min != 0 || tm->tm_hour % 6 != 0) continue;
-    int32_t f = frac_of(t, now, range_s);
-    if (f * 1000 / FRAC > g_view.reveal) continue;
-    graphics_fill_circle(ctx, track_pt(b, f, TICK_IN), tm->tm_hour == 0 ? 2 : 1);
-  }
+  // 30-minute slots, aligned to the clock (:00 and :30). Each slot is a faint
+  // dash along the edge; where rain is coming, a bar grows inward instead.
+  const int32_t slot_gap = FRAC / (range * 2) * 12 / 100;
+  time_t slot = now - now % 1800;
+  for (; slot < now + range_s; slot += 1800) {
+    time_t s0 = slot < now ? now : slot;
+    time_t s1 = slot + 1800 > now + range_s ? now + range_s : slot + 1800;
+    int32_t f0 = frac_of(s0, now, range_s) + (slot < now ? 0 : slot_gap);
+    int32_t f1 = frac_of(s1, now, range_s) - slot_gap;
+    if (f1 <= f0) continue;
+    if (f1 * 1000 / FRAC > g_view.reveal) break;
 
-  // A faint base line round the edge, so dry hours still read as "dry".
-  graphics_context_set_stroke_color(ctx, th->base);
-  graphics_context_set_stroke_width(ctx, 1);
-  GPoint prev = track_pt(b, 0, RAIN_EDGE);
-  for (int s = 1; s <= shown; s++) {
-    GPoint p = track_pt(b, (int32_t)s * FRAC / steps, RAIN_EDGE);
-    graphics_draw_line(ctx, prev, p);
-    prev = p;
-  }
-
-  // One bar per hour, growing inward from the edge.
-  int first = wx_index_at(now);
-  if (first >= 0) {
-    const int32_t gap = FRAC / range * 15 / 100;   // space between bars
-    for (int k = first; k < g_wx.count; k++) {
-      time_t h0 = (time_t)g_wx.t0 + (time_t)k * 3600, h1 = h0 + 3600;
-      if (h0 >= now + range_s) break;
-      int len = bar_len(g_wx.precip[k]);
-      if (!len) continue;
-      int32_t f0 = frac_of(h0 < now ? now : h0, now, range_s) + (h0 < now ? 0 : gap);
-      int32_t f1 = frac_of(h1 > now + range_s ? now + range_s : h1, now, range_s) - gap;
-      if (f1 <= f0) continue;
-      if (f1 * 1000 / FRAC > g_view.reveal) continue;
-      bool likely = g_wx.prob[k] == PROB_UNKNOWN || g_wx.prob[k] >= 50;
-      // Colour = how much; solid = likely (50 % or more), outline = unlikely.
-      GColor c = rain_color(th, g_wx.precip[k]);
-      graphics_context_set_fill_color(ctx, c);
-      graphics_context_set_stroke_color(ctx, c);
+    bool likely;
+    int rate = slot_rain(slot, &likely);   // 0.1 mm per hour
+    int len = bar_len(rate);
+    if (!len) {
+      graphics_context_set_stroke_color(ctx, th->base);
       graphics_context_set_stroke_width(ctx, 1);
-      draw_quad(ctx, track_pt(b, f0, RAIN_EDGE), track_pt(b, f1, RAIN_EDGE),
-                track_pt(b, f1, RAIN_EDGE + len), track_pt(b, f0, RAIN_EDGE + len), likely);
+      GPoint prev = track_pt(b, f0, RAIN_EDGE);
+      const int n = 4;                      // follow the curve of the edge
+      for (int i = 1; i <= n; i++) {
+        GPoint p = track_pt(b, f0 + (f1 - f0) * i / n, RAIN_EDGE);
+        graphics_draw_line(ctx, prev, p);
+        prev = p;
+      }
+      continue;
     }
+    // Colour = how much; solid = likely (50 % or more), outline = unlikely.
+    GColor c = rain_color(th, rate);
+    graphics_context_set_fill_color(ctx, c);
+    graphics_context_set_stroke_color(ctx, c);
+    graphics_context_set_stroke_width(ctx, 1);
+    draw_quad(ctx, track_pt(b, f0, RAIN_EDGE), track_pt(b, f1, RAIN_EDGE),
+              track_pt(b, f1, RAIN_EDGE + len), track_pt(b, f0, RAIN_EDGE + len), likely);
   }
 
+  int first = wx_index_at(now);
   // Amount at the heaviest hour of each rain spell (up to 4 spells).
   if (first >= 0 && g_view.reveal >= 1000) {
     int labels = 0, peak = -1, k0 = -1;

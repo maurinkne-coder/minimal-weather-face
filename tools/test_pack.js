@@ -23,7 +23,7 @@ for (var i = 0; i < 120; i++) {
   hourly.uv_index.push(i < 100 ? 3.14 : null);
   hourly.is_day.push(1);
 }
-var m0 = now - (now % 900) - 900;
+var m0 = now - (now % 1800) - 900;
 var j = {
   current: { time: now - 120, temperature_2m: -1.5, weather_code: 3 },
   hourly: hourly,
@@ -39,7 +39,7 @@ assert.strictEqual(d.WxPrecip[1], 12);
 assert.strictEqual(d.WxProb[1], 255);
 assert.strictEqual(d.WxGust[0], 43);
 assert.strictEqual(d.WxUv[0], 31);
-assert.strictEqual(d.WxM15T0, m0 + 900);
+assert.strictEqual(d.WxM15T0, now - (now % 1800));
 assert.deepStrictEqual(d.WxM15, [2, 0, 0, 0, 0, 0, 0, 0]);
 assert.strictEqual(d.WxRise.length, 16);
 assert.strictEqual(d.WxCurTemp, -15);

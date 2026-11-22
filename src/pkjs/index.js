@@ -191,7 +191,8 @@ function pack(j) {
 
   var m = j.minutely_15;
   if (m && m.time && m.precipitation) {
-    var ms = startIndex(m.time, now);
+    // Start at the current half hour so the watch can pair quarters into 30-minute bars.
+    var ms = startIndex(m.time, now - (now % 1800));
     var slots = [];
     var known = false;
     for (var k = ms; k < m.time.length && slots.length < M15_SLOTS; k++) {

@@ -13,11 +13,13 @@ fonts, so the lettering differs a little from the watch._
 
 ## How to read it
 
-- **A blue bar chart** runs all the way round the edge, one bar per hour,
+- **A blue bar chart** runs all the way round the edge in 30-minute slots,
   starting at the dot at the top (now) and running clockwise. Round 2 shows
   24 hours. On Time 2 you can choose 12, 24 or 48 hours.
-- **Bars** grow inward from a faint base line: the longer the bar, the more
-  rain (full length at 4 mm/h).
+- **Dry slots** are faint dashes along the edge, so every half hour is visible
+  even without rain. **Rainy slots** grow a bar inward instead: the longer the
+  bar, the more rain (full length at 4 mm/h). The next two hours use
+  Open-Meteo's 15-minute data, and later slots use the hourly forecast.
 - **Colour grades the amount**, so you can tell at a glance:
 
   | Theme | light (< 1 mm/h) | medium (1 to 4 mm/h) | heavy (4 mm/h or more) |
@@ -32,7 +34,6 @@ fonts, so the lettering differs a little from the watch._
 - **Rain amounts**: each rain spell is labelled with its heaviest hour, like
   `2.8 mm` (or `.11 in`), placed as close to the longest bar as it fits beside
   the text.
-- **Small dots** mark 00, 06, 12 and 18 o'clock. The midnight dot is bigger.
 - **Middle**: the date, the time in large Inter Light digits, the current temperature and sky, then a
   smart line, then an optional extra line (battery, steps or heart rate).
 - **Wrist flick**: a cursor walks along the line, and the middle shows the

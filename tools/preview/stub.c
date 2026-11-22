@@ -48,7 +48,7 @@ static void fake(time_t now, int scenario) {
     if (i >= 3 && i <= 7) { g_wx.precip[i] = (uint8_t)(i == 5 ? 52 : i * 4); g_wx.prob[i] = 80; g_wx.code[i] = 61; }
     if (i >= 20 && i <= 22) { g_wx.precip[i] = 3; g_wx.prob[i] = 35; g_wx.code[i] = 51; }
   }
-  g_wx.m15_t0 = (uint32_t)(now - now % 900); g_wx.m15_count = 8;
+  g_wx.m15_t0 = (uint32_t)(now - now % 1800); g_wx.m15_count = 8;
   if (scenario == 0) g_wx.m15[3] = 2;
   for (int d = 0; d < 4; d++) {
     time_t mid = now - now % 86400 + d * 86400;
