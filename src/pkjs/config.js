@@ -7,7 +7,7 @@ module.exports = [
   },
   {
     type: 'text',
-    defaultValue: 'The next hours of rain as a blue bar chart around a big clock.'
+    defaultValue: 'A big clock with the coming rain drawn as bars round the edge.'
   },
 
   {
