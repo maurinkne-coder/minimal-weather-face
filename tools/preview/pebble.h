@@ -35,6 +35,7 @@ typedef enum { GCornerNone } GCornerMask;
 typedef enum { GOvalScaleModeFitCircle } GOvalScaleMode;
 
 #define FONT_KEY_GOTHIC_14 "gothic14"
+#define FONT_KEY_GOTHIC_14_BOLD "gothic14b"
 #define FONT_KEY_GOTHIC_18 "gothic18"
 #define FONT_KEY_GOTHIC_18_BOLD "gothic18b"
 #define FONT_KEY_GOTHIC_24_BOLD "gothic24b"
@@ -76,3 +77,4 @@ void graphics_fill_circle(GContext *c, GPoint p, uint16_t r);
 void graphics_draw_line(GContext *c, GPoint a, GPoint b);
 void graphics_fill_radial(GContext *c, GRect r, GOvalScaleMode m, uint16_t inset, int32_t a0, int32_t a1);
 void graphics_draw_text(GContext *c, const char *t, GFont f, GRect r, GTextOverflowMode o, GTextAlignment a, void *attr);
+GSize graphics_text_layout_get_content_size(const char *t, GFont f, GRect r, GTextOverflowMode o, GTextAlignment a);

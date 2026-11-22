@@ -76,3 +76,15 @@ int main(int argc, char **argv) {
 }
 void tilt_apply(GContext *c, GRect b, int deg, GColor bg) { (void)b; if (deg) printf("[\"rotate\",%d,%d]\n", deg, bg.argb); (void)c; }
 void tilt_release(void) {}
+// Rough text size, enough to test label placement.
+GSize graphics_text_layout_get_content_size(const char *t, GFont f, GRect r, GTextOverflowMode o, GTextAlignment a) {
+  (void)o; (void)a;
+  int n = 0; for (const char *p = t; *p; p++) if ((*p & 0xC0) != 0x80) n++;
+  int cw = 7, h = 18;
+  if (!strcmp(f, "gothic14b") || !strcmp(f, "gothic14")) { cw = 6; h = 14; }
+  else if (!strcmp(f, "gothic18") || !strcmp(f, "gothic18b")) { cw = 8; h = 18; }
+  else if (!strcmp(f, "gothic24b")) { cw = 10; h = 24; }
+  else if (!strncmp(f, "time", 4)) { cw = 31; h = 50; }
+  int w = n * cw; if (w > r.size.w) w = r.size.w;
+  return (GSize){(int16_t)w, (int16_t)h};
+}

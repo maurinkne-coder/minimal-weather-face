@@ -1,13 +1,11 @@
 #include "contour.h"
 
-// The face: two thin lines round the edge of the screen, starting at the top
-// ("now") and running clockwise into the coming hours, like contour lines.
-// - The blue rain line hugs the edge and bends inward where it will rain:
-//   the deeper the bend, the more rain. Rain that is likely turns it full
-//   blue; dry or unlikely stretches stay pale.
-// - The temperature line sits inside it, moving out towards the edge when it
-//   gets warmer and in towards the time when it gets colder. It is dimmer at
-//   night. Small dots mark 00, 06, 12 and 18 o'clock.
+// The face: one thin blue line round the edge of the screen, starting at the
+// dot at the top ("now") and running clockwise into the coming hours, like a
+// contour line. It hugs the edge while it stays dry and bends inward where
+// rain is coming: the deeper the bend, the more rain, and each rain spell is
+// labelled with its heaviest hour in mm (or inch). Likely rain is full blue,
+// dry or unlikely stretches are pale. Small dots mark 00, 06, 12 and 18 o'clock.
 
 #define FRAC 65536
 
@@ -20,24 +18,21 @@ typedef struct {
 // ---------------------------------------------------------------------------
 
 #if defined(PBL_ROUND)
-#define RAIN_EDGE 4       // rain line when dry: pixels from the screen edge
-#define RAIN_DEPTH 9      // how far in it bends for heavy rain
-#define LINE_OUT 17       // warmest point of the temperature line
-#define LINE_SPAN 18      // coldest point is this much further in
-#define LINE_W 3
-#define TICK_IN (LINE_OUT + LINE_SPAN + 5)
+#define RAIN_EDGE 5       // the line when dry: pixels from the screen edge
+#define RAIN_DEPTH 18     // how far in it bends for heavy rain
+#define RAIN_W 3
 #else
-#define RAIN_EDGE 2
-#define RAIN_DEPTH 7
-#define LINE_OUT 13
-#define LINE_SPAN 10
-#define LINE_W 2
-#define TICK_IN (LINE_OUT + LINE_SPAN + 3)
+#define RAIN_EDGE 3
+#define RAIN_DEPTH 12
+#define RAIN_W 2
 #define CORNER_R 18
 #endif
-#define RAIN_W 2
+#define TICK_IN (RAIN_EDGE + RAIN_DEPTH + 5)
+#define BASE_MID (RAIN_EDGE + RAIN_DEPTH / 2)
 
-#define BASE_MID (LINE_OUT + LINE_SPAN / 2)
+// Text in the middle, as drawn upright, so labels can keep clear of it.
+static GRect s_text[5];
+static int s_text_n;
 
 #if defined(PBL_ROUND)
 static GPoint round_pt(GRect b, int32_t f, int inset) {
@@ -180,16 +175,17 @@ static int32_t frac_of(time_t t, time_t now, int range_s) {
   return (int32_t)((int64_t)(t - now) * FRAC / range_s);
 }
 
-static int temp_inset(int16_t t, int16_t hi, int16_t lo) {
-  if (hi <= lo) return LINE_OUT + LINE_SPAN / 2;
-  return LINE_OUT + (int)((int32_t)(hi - t) * LINE_SPAN / (hi - lo));
+// How far the line bends in at time t (0 when dry). Hourly amounts are
+// placed at the middle of their hour and blended in between; a square root
+// keeps light rain visible while heavy rain still bends deeper.
+static int rain_depth_of(int32_t p) {
+  if (p < 1) return 0;
+  if (p > 40) p = 40;                                  // 4 mm/h fills the depth
+  return 2 + (int)(isqrt(p * 100) * (RAIN_DEPTH - 2) / 63);
 }
 
-// How far the rain line bends in at time t (0 when dry). Hourly amounts are
-// placed at the middle of their hour and blended in between; a square root
-// keeps light rain visible without heavy rain running into the other line.
 static int rain_depth(time_t t, bool *likely) {
-  *likely = true;
+  *likely = false;
   if (g_wx.count == 0) return 0;
   int32_t x = (int32_t)(t - (time_t)g_wx.t0) - 1800;   // seconds past hour 0's middle
   if (x < 0) x = 0;
@@ -202,9 +198,68 @@ static int rain_depth(time_t t, bool *likely) {
   uint8_t pr = frac < 1800 || k + 1 >= g_wx.count ? g_wx.prob[k] : g_wx.prob[k + 1];
   // Dry stretches stay pale, so the rain stands out in full blue.
   *likely = p >= 1 && (pr == PROB_UNKNOWN || pr >= 50);
-  if (p < 1) return 0;
-  if (p > 40) p = 40;                                  // 4 mm/h fills the depth
-  return 1 + (int)(isqrt(p * 100) * (RAIN_DEPTH - 1) / 63);
+  return rain_depth_of(p);
+}
+
+static bool rects_overlap(GRect a, GRect c) {
+  return a.origin.x < c.origin.x + c.size.w && c.origin.x < a.origin.x + a.size.w &&
+         a.origin.y < c.origin.y + c.size.h && c.origin.y < a.origin.y + a.size.h;
+}
+
+// Writes the spell's heaviest hourly amount just inside the line, as close to
+// the deepest point as it fits without sitting on the text in the middle.
+static bool label_fits(GRect b, GRect box) {
+  int cx = b.origin.x + b.size.w / 2, cy = b.origin.y + b.size.h / 2;
+#if defined(PBL_ROUND)
+  // All four corners inside the circle, with a small margin.
+  int r = b.size.w / 2 - RAIN_EDGE - RAIN_DEPTH - 3;   // clear of the line
+  for (int i = 0; i < 4; i++) {
+    int x = box.origin.x + (i & 1 ? box.size.w : 0) - cx;
+    int y = box.origin.y + (i & 2 ? box.size.h : 0) - cy;
+    if (x * x + y * y > r * r) return false;
+  }
+#else
+  const int m = RAIN_EDGE + RAIN_DEPTH + 2;            // clear of the line
+  if (box.origin.x < b.origin.x + m || box.origin.y < b.origin.y + m ||
+      box.origin.x + box.size.w > b.origin.x + b.size.w - m ||
+      box.origin.y + box.size.h > b.origin.y + b.size.h - m) return false;
+#endif
+  // Compare with the text in its own (possibly turned) frame.
+  int32_t ta = DEG_TO_TRIGANGLE(((g_set.tilt % 360) + 360) % 360);
+  int32_t sn = sin_lookup(ta), cs = cos_lookup(ta);
+  int32_t dx = box.origin.x + box.size.w / 2 - cx, dy = box.origin.y + box.size.h / 2 - cy;
+  int ux = cx + (int)((dx * cs + dy * sn) / TRIG_MAX_RATIO);
+  int uy = cy + (int)((-dx * sn + dy * cs) / TRIG_MAX_RATIO);
+  GRect turned = GRect(ux - box.size.w / 2, uy - box.size.h / 2, box.size.w, box.size.h);
+  for (int i = 0; i < s_text_n; i++) {
+    if (rects_overlap(turned, s_text[i])) return false;
+  }
+  return true;
+}
+
+static void draw_rain_label(GContext *ctx, GRect b, const Theme *th, time_t now, int range_s,
+                            int k0, int k1, int peak) {
+  char tb[16];
+  fmt_rain_short(tb, sizeof(tb), g_wx.precip[peak]);
+  // Try the peak first, then step outwards through the spell, half an hour at a time.
+  int span = (k1 - k0 + 1) * 2;
+  for (int i = 0; i <= span * 2; i++) {
+    int step = (i + 1) / 2 * (i % 2 ? 1 : -1);
+    time_t t = (time_t)g_wx.t0 + (time_t)peak * 3600 + 1800 + (time_t)step * 1800;
+    if (t < (time_t)g_wx.t0 + (time_t)k0 * 3600 || t > (time_t)g_wx.t0 + (time_t)(k1 + 1) * 3600) continue;
+    if (t < now || t >= now + range_s) continue;
+    int32_t f = frac_of(t, now, range_s);
+    for (int in = RAIN_EDGE + RAIN_DEPTH + 8; in <= RAIN_EDGE + RAIN_DEPTH + 32; in += 4) {
+      GPoint p = track_pt(b, f, in);
+      GRect box = GRect(p.x - 20, p.y - 7, 40, 14);
+      if (!label_fits(b, box)) continue;
+      graphics_context_set_text_color(ctx, th->rain);
+      graphics_draw_text(ctx, tb, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
+                         GRect(p.x - 22, p.y - 10, 44, 16), GTextOverflowModeFill,
+                         GTextAlignmentCenter, NULL);
+      return;
+    }
+  }
 }
 
 static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
@@ -215,24 +270,7 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
 
   graphics_context_set_antialiased(ctx, true);
 
-  // Scale: warmest and coldest moment on the line. At least 6 degrees of
-  // spread, so a flat day stays a calm line instead of a jagged one.
-  int16_t hi = INT16_MIN, lo = INT16_MAX;
-  for (int s = 0; s <= steps; s++) {
-    bool ok;
-    int16_t t = wx_temp_at(now + (time_t)s * range_s / steps, &ok);
-    if (!ok) continue;
-    if (t > hi) hi = t;
-    if (t < lo) lo = t;
-  }
-  bool have = hi >= lo;
-  if (have && hi - lo < 60) {
-    int16_t mid = (hi + lo) / 2;
-    hi = mid + 30;
-    lo = mid - 30;
-  }
-
-  // Time dots at 00, 06, 12 and 18 local time.
+  // Time dots at 00, 06, 12 and 18 local time, just inside the line.
   graphics_context_set_fill_color(ctx, th->dim);
   for (time_t t = now - now % 3600 + 3600; t < now + range_s; t += 3600) {
     struct tm *tm = localtime(&t);
@@ -242,107 +280,52 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
     graphics_fill_circle(ctx, track_pt(b, f, TICK_IN), tm->tm_hour == 0 ? 2 : 1);
   }
 
-  // The temperature line.
-  graphics_context_set_stroke_width(ctx, LINE_W);
-  GPoint prev = GPoint(0, 0);
-  bool prev_ok = false;
-  for (int s = 0; s <= shown; s++) {
-    int32_t f = (int32_t)s * FRAC / steps;
-    time_t t = now + (time_t)s * range_s / steps;
-    bool ok;
-    int16_t temp = wx_temp_at(t, &ok);
-    if (!ok) {
-      prev_ok = false;
-      continue;
-    }
-    GPoint p = track_pt(b, f, temp_inset(temp, hi, lo));
-    if (prev_ok) {
-      int i = wx_index_at(t);
-      graphics_context_set_stroke_color(ctx, g_wx.day[i] ? th->fg : th->dim);
-      graphics_draw_line(ctx, prev, p);
-    }
-    prev = p;
-    prev_ok = true;
-  }
-  if (!have) {
-    // No forecast yet: a faint resting line.
-    graphics_context_set_stroke_color(ctx, th->dim);
-    graphics_context_set_stroke_width(ctx, 1);
-    for (int s = 0; s < shown; s++) {
-      graphics_draw_line(ctx, track_pt(b, (int32_t)s * FRAC / steps, BASE_MID),
-                         track_pt(b, (int32_t)(s + 1) * FRAC / steps, BASE_MID));
-    }
-  }
-
-  // The rain line, all the way round, hugging the edge.
+  // The rain line, all the way round.
   graphics_context_set_stroke_width(ctx, RAIN_W);
-  prev_ok = false;
+  GPoint prev = GPoint(0, 0);
   for (int s = 0; s <= shown; s++) {
     int32_t f = (int32_t)s * FRAC / steps;
     time_t t = now + (time_t)s * range_s / steps;
     bool likely;
-    int depth = rain_depth(t, &likely);
-    GPoint p = track_pt(b, f, RAIN_EDGE + depth);
-    if (prev_ok) {
+    GPoint p = track_pt(b, f, RAIN_EDGE + rain_depth(t, &likely));
+    if (s > 0) {
       graphics_context_set_stroke_color(ctx, likely ? th->rain : th->rain_light);
       graphics_draw_line(ctx, prev, p);
     }
     prev = p;
-    prev_ok = true;
   }
 
-#if defined(PBL_ROUND)
+  // Amount at the heaviest hour of each rain spell (up to 4 spells).
   int first = wx_index_at(now);
-  // High and low of the next 24 hours, next to where they happen.
   if (first >= 0 && g_view.reveal >= 1000) {
-    int ih = -1, il = -1;
-    for (int k = first; k < g_wx.count && k < first + range; k++) {
-      if (ih < 0 || g_wx.temp[k] > g_wx.temp[ih]) ih = k;
-      if (il < 0 || g_wx.temp[k] < g_wx.temp[il]) il = k;
-    }
-    int marks[2] = {ih, il};
-    graphics_context_set_text_color(ctx, th->dim);
-    for (int m = 0; m < 2; m++) {
-      if (m == 1 && g_wx.temp[il] == g_wx.temp[ih]) break;
-      time_t t = (time_t)g_wx.t0 + (time_t)marks[m] * 3600;
-      if (t < now) t = now;
-      int32_t f = frac_of(t, now, range_s);
-      if (f < FRAC / 40 || f > FRAC - FRAC / 40) continue; // keep clear of "now"
-      GPoint p = track_pt(b, f, TICK_IN + 14);
-      // Keep clear of the weather line beside the middle of the face.
-      // Work in the turned frame of the text, then turn back.
-      int cx = b.origin.x + b.size.w / 2, cy = b.origin.y + b.size.h / 2;
-      int32_t ta = DEG_TO_TRIGANGLE(((g_set.tilt % 360) + 360) % 360);
-      int32_t sn = sin_lookup(ta), cs = cos_lookup(ta);
-      int32_t dx = p.x - cx, dy = p.y - cy;
-      int32_t ux = (dx * cs + dy * sn) / TRIG_MAX_RATIO;
-      int32_t uy = (-dx * sn + dy * cs) / TRIG_MAX_RATIO;
-      if (uy > -34 && uy < 44) uy = uy < 5 ? -34 : 44;
-      if (ux > -80 && ux < 80 && uy > -92 && uy < 84) continue; // would sit on the text
-      p = GPoint(cx + (ux * cs - uy * sn) / TRIG_MAX_RATIO,
-                 cy + (ux * sn + uy * cs) / TRIG_MAX_RATIO);
-      char tb[8];
-      fmt_temp(tb, sizeof(tb), g_wx.temp[marks[m]]);
-      graphics_draw_text(ctx, tb, fonts_get_system_font(FONT_KEY_GOTHIC_14),
-                         GRect(p.x - 18, p.y - 10, 36, 16), GTextOverflowModeFill,
-                         GTextAlignmentCenter, NULL);
+    int labels = 0, peak = -1, k0 = -1;
+    for (int k = first; k <= g_wx.count && labels < 4; k++) {
+      time_t start = (time_t)g_wx.t0 + (time_t)k * 3600;
+      bool in_range = k < g_wx.count && start < now + range_s;
+      bool wet = in_range && g_wx.precip[k] >= 1;
+      if (wet) {
+        if (peak < 0) k0 = k;
+        if (peak < 0 || g_wx.precip[k] > g_wx.precip[peak]) peak = k;
+      } else if (peak >= 0) {
+        draw_rain_label(ctx, b, th, now, range_s, k0, k - 1, peak);
+        labels++;
+        peak = -1;
+      }
+      if (!in_range) break;
     }
   }
-#endif
 
   // "Now" marker on the line, and the scroll cursor during a wrist flick.
-  bool ok;
-  int16_t t_now = wx_temp_at(now, &ok);
-  GPoint now_p = track_pt(b, 0, ok ? temp_inset(t_now, hi, lo) : BASE_MID);
+  bool likely;
+  GPoint now_p = track_pt(b, 0, RAIN_EDGE + rain_depth(now, &likely));
   graphics_context_set_fill_color(ctx, th->bg);
-  graphics_fill_circle(ctx, now_p, 5);
+  graphics_fill_circle(ctx, now_p, 6);
   graphics_context_set_fill_color(ctx, th->fg);
-  graphics_fill_circle(ctx, now_p, 3);
+  graphics_fill_circle(ctx, now_p, 4);
   if (g_view.scrub >= 0) {
     int32_t f = (int32_t)((int64_t)g_view.scrub * FRAC / (range * 10));
     time_t t = now + (time_t)g_view.scrub * 360;
-    int16_t ts = wx_temp_at(t, &ok);
-    GPoint p = track_pt(b, f, ok ? temp_inset(ts, hi, lo) : BASE_MID);
+    GPoint p = track_pt(b, f, RAIN_EDGE + rain_depth(t, &likely));
     graphics_context_set_fill_color(ctx, th->bg);
     graphics_fill_circle(ctx, p, 6);
     graphics_context_set_fill_color(ctx, th->accent);
@@ -355,6 +338,12 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
 // ---------------------------------------------------------------------------
 
 static void draw_text_font(GContext *ctx, const char *s, GFont font, GRect r, GColor c) {
+  if (s_text_n < (int)ARRAY_LENGTH(s_text) && s[0]) {
+    GSize sz = graphics_text_layout_get_content_size(s, font, r, GTextOverflowModeTrailingEllipsis,
+                                                     GTextAlignmentCenter);
+    s_text[s_text_n++] = GRect(r.origin.x + (r.size.w - sz.w) / 2 - 2, r.origin.y,
+                               sz.w + 4, sz.h + 4);
+  }
   graphics_context_set_text_color(ctx, c);
   graphics_draw_text(ctx, s, font, r, GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
 }
@@ -371,6 +360,7 @@ void draw_face(Layer *layer, GContext *ctx) {
   graphics_context_set_fill_color(ctx, th.bg);
   graphics_fill_rect(ctx, b, 0, GCornerNone);
 
+  s_text_n = 0;
   char date[16], clock[8], line1[40], line2[64], corner[24];
   text_date(date, sizeof(date), now);
   text_time(clock, sizeof(clock), now);

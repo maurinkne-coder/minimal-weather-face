@@ -97,6 +97,7 @@ void text_smart(char *buf, size_t n, time_t now);
 void text_corner(char *buf, size_t n);
 void text_scrub(char *line1, size_t n1, char *line2, size_t n2, time_t t);
 void fmt_temp(char *buf, size_t n, int16_t tenths);
+void fmt_rain_short(char *buf, size_t n, int tenths_mm);
 
 // draw.c
 void draw_face(Layer *layer, GContext *ctx);

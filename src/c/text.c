@@ -119,6 +119,18 @@ static void fmt_rain(char *buf, size_t n, int tenths_mm) {
   }
 }
 
+// Rain amount for labels on the ring: "2.8 mm" or ".11 in".
+void fmt_rain_short(char *buf, size_t n, int tenths_mm) {
+  if (g_set.rain_unit == RAIN_IN) {
+    int hundredths = div_round(tenths_mm * 100, 254);
+    if (hundredths < 1) hundredths = 1;
+    if (hundredths >= 100) snprintf(buf, n, "%d.%02d in", hundredths / 100, hundredths % 100);
+    else snprintf(buf, n, ".%02d in", hundredths);
+  } else {
+    snprintf(buf, n, "%d.%d mm", tenths_mm / 10, tenths_mm % 10);
+  }
+}
+
 static void fmt_wind(char *buf, size_t n, int kmh) {
   static const uint8_t BFT[] = {1, 6, 12, 20, 29, 39, 50, 62, 75, 89, 103, 118};
   switch (g_set.wind_unit) {

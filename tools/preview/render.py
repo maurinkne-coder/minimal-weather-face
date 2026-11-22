@@ -7,6 +7,7 @@ S = 3  # supersample
 LIB = "/usr/share/fonts/truetype/liberation/"
 FONTS = {  # key: (file, px size, horizontal squeeze, y offset)
     "gothic14": ("LiberationSans-Regular.ttf", 13, 0.86, 3),
+    "gothic14b": ("LiberationSans-Bold.ttf", 13, 0.86, 3),
     "gothic18": ("LiberationSans-Regular.ttf", 16, 0.86, 4),
     "gothic18b": ("LiberationSans-Bold.ttf", 16, 0.84, 4),
     "gothic24b": ("LiberationSans-Bold.ttf", 21, 0.84, 5),

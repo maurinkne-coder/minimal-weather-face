@@ -1,30 +1,28 @@
 # Contour
 
-A minimal Pebble watchface: the next hours of weather drawn as one thin line
-around the time, like a contour line on a weather map. Built for Pebble Time 2
+A minimal Pebble watchface: the next hours of rain drawn as one thin blue line
+around a big clock, like a contour line on a weather map. Built for Pebble Time 2
 (`emery`) and Pebble Round 2 (`gabbro`).
 
 | Round 2 | Round 2, Daylight | Round 2, tilted 30° | Time 2 | Time 2, wrist flick |
 |---|---|---|---|---|
 | ![](docs/round-midnight.png) | ![](docs/round-daylight.png) | ![](docs/round-tilted.png) | ![](docs/time2-midnight.png) | ![](docs/time2-flick.png) |
 
-_The previews come from the host test harness in `tools/preview` with stand-in
+_The previews use a made-up forecast and come from the host test harness in `tools/preview` with stand-in
 fonts, so the lettering differs a little from the watch._
 
 ## How to read it
 
-- **Two lines** start at the dot at the top (now) and run clockwise. Round 2
-  shows 24 hours. On Time 2 you can choose 12, 24 or 48 hours.
-- **The blue rain line** runs all the way round the edge. It bends inward where
-  rain is coming: the deeper the bend, the more rain. It turns full blue where
-  rain is likely and stays pale where it's dry or rain is unlikely. In Mono it's
-  white and grey.
-- **The temperature line** sits inside it. It moves out towards the edge when
-  it gets warmer and in towards the time when it gets colder. The scale
-  stretches to the warmest and coldest moment shown, with a 6° minimum so a flat
-  day stays a calm line. It's dimmer at night.
+- **One blue line** runs all the way round the edge, starting at the dot at the
+  top (now) and running clockwise. Round 2 shows 24 hours. On Time 2 you can
+  choose 12, 24 or 48 hours.
+- **Rain** bends the line inward: the deeper the bend, the more rain. It turns
+  full blue where rain is likely and stays pale where it's dry or rain is
+  unlikely. In Mono it's white and grey.
+- **Rain amounts**: each rain spell is labelled with its heaviest hour, like
+  `2.8 mm` (or `.11 in`), placed as close to the deepest point as fits beside
+  the text.
 - **Small dots** mark 00, 06, 12 and 18 o'clock. The midnight dot is bigger.
-- **Round 2 only**: small numbers show the high and low of the next 24 hours.
 - **Middle**: the date, the time in large Inter Light digits, the current temperature and sky, then a
   smart line, then an optional extra line (battery, steps or heart rate).
 - **Wrist flick**: a cursor walks along the line, and the middle shows the
@@ -55,7 +53,7 @@ All of these are set from the phone app:
   weather model (best match, MeteoSwiss, DWD ICON, ECMWF, Météo-France,
   UK Met Office, GFS), and the location (phone GPS or a city name).
 
-Weather comes from [Open-Meteo](https://open-meteo.com), which needs no
+Temperature, sky and the smart line are in the middle. Weather comes from [Open-Meteo](https://open-meteo.com), which needs no
 account or API key. The watch stores 72 hours, so the line keeps working when
 your phone is away. Updates and animations pause below 20 % battery, and
 animations also pause in Quiet Time.
@@ -81,7 +79,7 @@ which is why npm must be installed.
 | Path | What it does |
 |---|---|
 | `src/c/main.c` | Watch app: storage, messages from the phone, ticks, battery, health, animations |
-| `src/c/draw.c` | Draws the rain and temperature lines and the text |
+| `src/c/draw.c` | Draws the rain line, its labels and the text |
 | `src/c/tilt.c` | Turns the face when a tilt is set |
 | `src/c/text.c` | Translations, units, and the smart line |
 | `src/c/weather.c` | Small helpers for the stored forecast |

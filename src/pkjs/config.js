@@ -7,7 +7,7 @@ module.exports = [
   },
   {
     type: 'text',
-    defaultValue: 'The next hours of weather as one thin line around the time.'
+    defaultValue: 'The next hours of rain as one thin blue line around a big clock.'
   },
 
   {
