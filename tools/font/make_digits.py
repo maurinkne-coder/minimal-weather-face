@@ -82,6 +82,20 @@ for yb in (Y0 + WALL, Y1 - WALL - SH):
     pen.lineTo((SX0, yb + CH))
     pen.closePath()
 f["glyf"]["eight"] = pen.glyph()
+
+# The 4 is a blocky open 4 (two upright stems joined by a bar) instead of
+# Orbitron's pointed diagonal, which reached into its neighbour on the
+# watch. Its corners are rounded with the other digits below.
+FX0, FX1, ST, BAR0 = 57, 680, 153, 250  # left, right, stroke, bar bottom
+pen = TTGlyphPen(None)
+four = [(FX0, Y1), (FX0 + ST, Y1), (FX0 + ST, BAR0 + ST), (FX1 - ST, BAR0 + ST),
+        (FX1 - ST, Y1), (FX1, Y1), (FX1, Y0), (FX1 - ST, Y0), (FX1 - ST, BAR0), (FX0, BAR0)]
+pen.moveTo(four[0])
+for pt in four[1:]:
+    pen.lineTo(pt)
+pen.closePath()
+f["glyf"]["four"] = pen.glyph()
+f["hmtx"]["four"] = (FX1 + FX0, FX0)
 f.save(dst)
 
 # Rounded corners: every sharp corner between two straight edges of

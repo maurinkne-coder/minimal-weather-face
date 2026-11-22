@@ -408,7 +408,7 @@ void draw_face(Layer *layer, GContext *ctx) {
   // a faint full-width track with the filled part on top.
   if (g_set.battline) {
     int pct = g_view.battery > 100 ? 100 : g_view.battery;
-    GRect r = GRect(cx - BAR_W / 2, cy - 11, BAR_W, 2);
+    GRect r = GRect(cx - BAR_W / 2, cy - 13, BAR_W, 2);
     graphics_context_set_fill_color(ctx, th.dim);
     graphics_fill_rect(ctx, r, 0, GCornerNone);
     GColor c = th.fg;
@@ -431,9 +431,9 @@ void draw_face(Layer *layer, GContext *ctx) {
   if (g_set.stepbar && g_view.steps >= 0) {
     int32_t goal = g_view.step_goal > 0 ? g_view.step_goal : 10000;
     int32_t done = g_view.steps > goal ? goal : g_view.steps;
-    // Same thickness and distance from the text as the battery line, so the
-    // two frame the info row evenly.
-    GRect r = GRect(cx - BAR_W / 2, cy + 8, BAR_W, 2);
+    // Mirrors the battery line: both sit 2 px from the digits and frame the
+    // info row evenly.
+    GRect r = GRect(cx - BAR_W / 2, cy + 11, BAR_W, 2);
     graphics_context_set_fill_color(ctx, th.dim);
     graphics_fill_rect(ctx, r, 0, GCornerNone);
     graphics_context_set_fill_color(ctx, th.steps);
@@ -445,7 +445,9 @@ void draw_face(Layer *layer, GContext *ctx) {
   // accent colour. Both use the same font so they share one baseline.
   {
     GFont f = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
-    int top = cy - 13;
+    // Lines sit at cy-13 and cy+11 (2 px from the digits each). The text
+    // ink (cap tops to descenders) is centred in the 22 px between them.
+    int top = cy - 14;
     GRect wide = GRect(0, 0, 400, 24);
     int wl = graphics_text_layout_get_content_size(left, f, wide, GTextOverflowModeTrailingEllipsis,
                                                    GTextAlignmentLeft).w;
@@ -455,7 +457,7 @@ void draw_face(Layer *layer, GContext *ctx) {
     if (wl + 5 + wr > MAX_W && right[0]) {
       // Too long: drop both to the smaller font before cutting anything off.
       f = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
-      top = cy - 9;
+      top = cy - 10;
       wl = graphics_text_layout_get_content_size(left, f, wide, GTextOverflowModeTrailingEllipsis,
                                                  GTextAlignmentLeft).w;
       wr = graphics_text_layout_get_content_size(right, f, wide, GTextOverflowModeTrailingEllipsis,
