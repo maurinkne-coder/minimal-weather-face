@@ -412,17 +412,43 @@ static const AnimationImplementation s_scrub_impl = {
   .teardown = scrub_teardown,
 };
 
+// The reveal plays once per launch, when the face is actually on screen.
+// Starting it in window_load raced the system's own screen transition:
+// going quickly from the menu back to the face, the 0.9 s reveal ran
+// (or finished) while the transition still covered the face, so it never
+// showed. It now waits for the app to get focus, which the system sends
+// when its transition is done, with a timer as a fallback.
+static bool s_revealed;
+static AppTimer *s_reveal_timer;
+
 static void start_reveal(void) {
+  if (s_revealed || !s_canvas) return;
+  s_revealed = true;
+  if (s_reveal_timer) {
+    app_timer_cancel(s_reveal_timer);
+    s_reveal_timer = NULL;
+  }
   if (!animations_allowed()) {
     g_view.reveal = 1000;
+    layer_mark_dirty(s_canvas);
     return;
   }
+  if (s_reveal_anim) animation_unschedule(s_reveal_anim);
   g_view.reveal = 0;
   s_reveal_anim = animation_create();
   animation_set_duration(s_reveal_anim, 900);
   animation_set_curve(s_reveal_anim, AnimationCurveEaseOut);
   animation_set_implementation(s_reveal_anim, &s_reveal_impl);
   animation_schedule(s_reveal_anim);
+}
+
+static void reveal_fallback(void *data) {
+  s_reveal_timer = NULL;
+  start_reveal();
+}
+
+static void focus_did_change(bool in_focus) {
+  if (in_focus) start_reveal();
 }
 
 // A wrist flick walks a cursor round the track and reads out each hour.
@@ -477,7 +503,9 @@ static void window_load(Window *window) {
   s_canvas = layer_create(layer_get_bounds(root));
   layer_set_update_proc(s_canvas, canvas_update);
   layer_add_child(root, s_canvas);
-  start_reveal();
+  // Hold the chart back until the face is on screen (see start_reveal).
+  if (animations_allowed()) g_view.reveal = 0;
+  s_reveal_timer = app_timer_register(1500, reveal_fallback, NULL);
 }
 
 static void window_unload(Window *window) {
@@ -509,6 +537,7 @@ static void init(void) {
   battery_state_service_subscribe(battery_handler);
   connection_service_subscribe((ConnectionHandlers){ .pebble_app_connection_handler = connection_handler });
   accel_tap_service_subscribe(tap_handler);
+  app_focus_service_subscribe_handlers((AppFocusHandlers){ .did_focus = focus_did_change });
 
   app_message_register_inbox_received(inbox_received);
   app_message_open(1536, 64);
@@ -519,6 +548,8 @@ static void deinit(void) {
   battery_state_service_unsubscribe();
   connection_service_unsubscribe();
   accel_tap_service_unsubscribe();
+  app_focus_service_unsubscribe();
+  if (s_reveal_timer) app_timer_cancel(s_reveal_timer);
   animation_unschedule_all();
   window_destroy(s_window);
 }

@@ -58,3 +58,5 @@ typedef struct { const uint32_t *durations; uint32_t num_segments; } VibePattern
 #define GColorFromHEX(v) ((GColor){ (uint8_t)(0xC0 | ((((v) >> 22) & 3) << 4) | ((((v) >> 14) & 3) << 2) | (((v) >> 6) & 3)) })
 typedef struct { void (*pebble_app_connection_handler)(bool); void (*pebblekit_connection_handler)(bool); } ConnectionHandlers;
 void connection_service_subscribe(ConnectionHandlers); void connection_service_unsubscribe(void);
+bool animation_unschedule(Animation*);
+typedef void (*AppFocusHandler)(bool in_focus); typedef struct { AppFocusHandler will_focus; AppFocusHandler did_focus; } AppFocusHandlers; void app_focus_service_subscribe_handlers(AppFocusHandlers); void app_focus_service_unsubscribe(void);
