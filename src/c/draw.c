@@ -231,13 +231,15 @@ static bool light_bg(const Theme *th) {
 // Colour of a rain bar from the amount (0.1 mm per hour) and the hour's
 // weather code. Theme blues grade light, medium and heavy rain; then fixed
 // warning colours: orange for strong rain (8 mm/h and more), red for a
-// thunderstorm or a downpour (20 mm/h and more). Snow is white (dark grey on
-// light backgrounds). Mono keeps its greys.
+// thunderstorm or a downpour (20 mm/h and more), violet for freezing rain
+// (ice on the ground). Snow is white (dark grey on light backgrounds). Mono
+// keeps its greys.
 static GColor rain_color(const Theme *th, int p, uint8_t code) {
 #ifdef PBL_COLOR
   if (g_set.theme != THEME_MONO) {
     if (code >= 95 || p >= 200) return GColorRed;
     if (p >= 80) return GColorOrange;
+    if (code == 56 || code == 57 || code == 66 || code == 67) return argb(0xE7);  // freezing rain: violet
     if ((code >= 71 && code <= 77) || code == 85 || code == 86) {
       return light_bg(th) ? GColorDarkGray : GColorWhite;
     }
@@ -373,9 +375,9 @@ static void draw_text_layer(GContext *ctx, GRect b, const Theme *thp, time_t now
   // CAP is the digit height (the height of the digit images), GAP the space
   // between two digits.
 #ifdef PBL_ROUND
-  const int CAP = 75, GAP = 13, MAX_W = 192, BAR_W = 166;
+  const int CAP = 75, GAP = 13, MAX_W = 192, BAR_W = 166, ROW_W = 228;
 #else
-  const int CAP = 78, GAP = 14, MAX_W = 160, BAR_W = 174;
+  const int CAP = 78, GAP = 14, MAX_W = 160, BAR_W = 174, ROW_W = 190;
 #endif
   const int HALF = 15;                 // centre line to the digits
   const int SMALL_CAP = 9, SMALL_PAD = 4, SMALL_GAP = 6;
@@ -391,8 +393,6 @@ static void draw_text_layer(GContext *ctx, GRect b, const Theme *thp, time_t now
   digits_draw(ctx, hh, cx, hh_top, GAP, th.fg, th.bg);
   digits_draw(ctx, mm, cx, mm_top, GAP, th.fg, th.bg);
   const int corner_y = mm_top + CAP + SMALL_GAP - SMALL_PAD;
-  int line_w = 0;  // width of the bottom line, for the symbols beside it
-  GRect wide_s = GRect(0, 0, 200, 18);
   if (g_set.corner == CORNER_TEMP) {
     // Today's low, now and high: the current temperature bright in the middle.
     char lo[12], cur[12], hi[12];
@@ -403,8 +403,7 @@ static void draw_text_layer(GContext *ctx, GRect b, const Theme *thp, time_t now
       int wl = graphics_text_layout_get_content_size(lo, g_small_font, wide, GTextOverflowModeFill, GTextAlignmentLeft).w;
       int wc = graphics_text_layout_get_content_size(cur, g_small_font, wide, GTextOverflowModeFill, GTextAlignmentLeft).w;
       int wh = graphics_text_layout_get_content_size(hi, g_small_font, wide, GTextOverflowModeFill, GTextAlignmentLeft).w;
-      line_w = wl + wc + wh + 2 * GAP;
-      int x = cx - line_w / 2;
+      int x = cx - (wl + wc + wh + 2 * GAP) / 2;
       graphics_context_set_text_color(ctx, th.dim);
       graphics_draw_text(ctx, lo, g_small_font, GRect(x, corner_y, wl + 2, 18), GTextOverflowModeFill, GTextAlignmentLeft, NULL);
       x += wl + GAP;
@@ -414,29 +413,10 @@ static void draw_text_layer(GContext *ctx, GRect b, const Theme *thp, time_t now
       graphics_context_set_text_color(ctx, th.dim);
       graphics_draw_text(ctx, hi, g_small_font, GRect(x, corner_y, wh + 2, 18), GTextOverflowModeFill, GTextAlignmentLeft, NULL);
     } else {
-      line_w = graphics_text_layout_get_content_size(cur, g_small_font, wide_s, GTextOverflowModeFill, GTextAlignmentLeft).w;
       draw_text_font(ctx, cur, g_small_font, GRect(cx - 70, corner_y, 140, 18), th.fg);
     }
   } else if (corner[0]) {
-    line_w = graphics_text_layout_get_content_size(corner, g_small_font, wide_s, GTextOverflowModeFill, GTextAlignmentLeft).w;
     draw_text_font(ctx, corner, g_small_font, GRect(cx - 70, corner_y, 140, 18), th.dim);
-  }
-
-  // Weather symbol left of the bottom line, lightning bolt right of it while
-  // charging. Both sit on the middle of the small capitals.
-  {
-    const int icon_y = corner_y + SMALL_PAD + SMALL_CAP / 2;
-    const int half = line_w ? line_w / 2 + 6 + 7 : 10;  // 6 px gap, icons 14 px wide
-    bool mono = g_set.theme == THEME_MONO;
-    GColor warm = mono ? th.fg : light_bg(&th) ? GColorOrange : GColorChromeYellow;
-    int i = wx_index_at(now);
-    bool fresh = g_wx.cur_t && now - (time_t)g_wx.cur_t < 75 * 60;
-    if (fresh || i >= 0) {
-      IconColors k = { .cloud = th.fg, .sun = warm, .water = mono ? th.fg : th.medium, .bg = th.bg };
-      uint8_t code = fresh ? g_wx.cur_code : g_wx.code[i];
-      icon_weather(ctx, GPoint(cx - half, icon_y), code, is_daytime(now), &k);
-    }
-    if (g_view.charging) icon_bolt(ctx, GPoint(cx + half, icon_y), warm);
   }
 
   // Battery line just above the info row, step goal bar just below it:
@@ -475,8 +455,20 @@ static void draw_text_layer(GContext *ctx, GRect b, const Theme *thp, time_t now
   }
 
   // Info row: temperature in the main colour, then the smart line in the
-  // accent colour. Both use the same font so they share one baseline.
+  // accent colour. Both use the same font so they share one baseline. The
+  // weather symbol sits left of the text and, while charging, a lightning
+  // bolt right of it, both centred between the two lines.
   {
+    bool mono = g_set.theme == THEME_MONO;
+    GColor warm = mono ? th.fg : light_bg(&th) ? GColorOrange : GColorChromeYellow;
+    int wi = wx_index_at(now);
+    bool fresh = g_wx.cur_t && now - (time_t)g_wx.cur_t < 75 * 60;
+    bool has_wx = fresh || wi >= 0;
+    bool has_bolt = g_view.charging;
+    // With symbols the row may run a little wider (over the ring, which it
+    // covers anyway); the text leaves 20 px on each side for them.
+    const int ICON_HALF = 7, ICON_GAP = 6;
+    int max_w = (has_wx || has_bolt) ? ROW_W - 2 * (2 * ICON_HALF + ICON_GAP) : MAX_W;
     GFont f = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
     // Lines sit at cy-13 and cy+11 (2 px from the digits each). The capital
     // letters and digits of the text are centred in the 22 px between them.
@@ -487,7 +479,7 @@ static void draw_text_layer(GContext *ctx, GRect b, const Theme *thp, time_t now
     int wr = right[0] ? graphics_text_layout_get_content_size(right, f, wide,
                                                               GTextOverflowModeTrailingEllipsis,
                                                               GTextAlignmentLeft).w : 0;
-    if (wl + 5 + wr > MAX_W && right[0]) {
+    if (wl + 5 + wr > max_w && right[0]) {
       // Too long: drop both to the smaller font before cutting anything off.
       f = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
       top = cy - 8;
@@ -497,7 +489,7 @@ static void draw_text_layer(GContext *ctx, GRect b, const Theme *thp, time_t now
                                                  GTextAlignmentLeft).w;
     }
     int gap = (wl && wr) ? 5 : 0;
-    if (wl + gap + wr > MAX_W) wr = MAX_W - wl - gap;
+    if (wl + gap + wr > max_w) wr = max_w - wl - gap;
     int x0 = cx - (wl + gap + wr) / 2;
     graphics_context_set_text_color(ctx, th.fg);
     graphics_draw_text(ctx, left, f, GRect(x0, top, wl + 2, 24), GTextOverflowModeTrailingEllipsis,
@@ -507,6 +499,15 @@ static void draw_text_layer(GContext *ctx, GRect b, const Theme *thp, time_t now
       graphics_draw_text(ctx, right, f, GRect(x0 + wl + gap, top, wr + 2, 24),
                          GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
     }
+    // Middle of the 22 px between the lines (cy-11 .. cy+10).
+    const int icon_y = cy - 1;
+    const int text_w = wl + gap + wr;
+    if (has_wx) {
+      IconColors k = { .cloud = th.fg, .sun = warm, .water = mono ? th.fg : th.medium, .bg = th.bg };
+      uint8_t code = fresh ? g_wx.cur_code : g_wx.code[wi];
+      icon_weather(ctx, GPoint(x0 - ICON_GAP - ICON_HALF, icon_y), code, is_daytime(now), &k);
+    }
+    if (has_bolt) icon_bolt(ctx, GPoint(x0 + text_w + ICON_GAP + ICON_HALF, icon_y), warm);
   }
 
 }
