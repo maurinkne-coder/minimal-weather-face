@@ -36,7 +36,7 @@ gs["eight"].draw(rec)
 coords, ends, flags = f["glyf"]["eight"].getCoordinates(f["glyf"])
 # A smooth dip: the side runs straight into the notch and out again with no
 # corner (TrueType quadratic curves, tangent stays vertical at both ends).
-M, W, D = 365, 150, 42  # middle of the bar, half height and depth of the dip (a long gentle wave)
+M, W, D = 365, 100, 42  # middle of the bar, half height and depth of the dip
 from fontTools.cu2qu import curve_to_quadratic
 def dip(x, k):  # k = +1 on the left side, -1 on the right side
     # Two smooth eased S-curves (cubic, converted to TrueType quadratics):
