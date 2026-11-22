@@ -1,7 +1,8 @@
 // Phone side: settings page, location, and the Open-Meteo forecast.
 var Clay = require('./vendor/pebble-clay');
 var clayConfig = require('./config');
-var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
+var customClay = require('./custom-clay');
+var clay = new Clay(clayConfig, customClay, { autoHandleEvents: false });
 
 var HOURS = 72;
 var M15_SLOTS = 8;
