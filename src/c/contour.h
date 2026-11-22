@@ -50,7 +50,7 @@ enum { RAIN_MM, RAIN_IN };
 enum { BATT_OFF, BATT_PLAIN, BATT_COLOR };
 enum { WIND_KMH, WIND_MPH, WIND_MS, WIND_KT, WIND_BFT };
 
-#define SETTINGS_VERSION 5
+#define SETTINGS_VERSION 6
 
 typedef struct {
   uint8_t version;
@@ -78,6 +78,7 @@ typedef struct {
   uint8_t owncolors;  // use textcolor/accentcolor instead of the palette's
   uint8_t textcolor;  // Pebble 8-bit colour (0b11RRGGBB)
   uint8_t accentcolor;
+  uint8_t chargebuzz; // buzz on plugging in, at 80 % and at 100 % (since version 6)
 } Settings;
 
 // ---- Things the face shows that come from the watch itself ----
@@ -125,6 +126,15 @@ void digits_draw(GContext *ctx, const char *s, int cx, int top, int gap, GColor 
 // draw.c
 void draw_face(Layer *layer, GContext *ctx);
 
-// tilt.c: turns everything drawn so far by `deg` degrees round the centre.
-void tilt_apply(GContext *ctx, GRect bounds, int deg, GColor bg);
+// icons.c: small weather symbol for a WMO code round `c`, and the charging bolt.
+typedef struct { GColor cloud, sun, water, bg; } IconColors;
+void icon_weather(GContext *ctx, GPoint c, uint8_t code, bool day, const IconColors *k);
+void icon_bolt(GContext *ctx, GPoint c, GColor col);
+
+// tilt.c: tilt_begin sets aside everything drawn so far (the text layer) and
+// clears the screen to `bg`; tilt_end lays it back on top, turned `deg`
+// degrees clockwise round the centre, with smoothed edges. tilt_begin
+// returns false (and leaves the screen alone) when there is no memory.
+bool tilt_begin(GContext *ctx, GRect bounds, GColor bg);
+void tilt_end(GContext *ctx, GRect bounds, int deg);
 void tilt_release(void);

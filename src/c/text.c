@@ -7,7 +7,7 @@
 enum {
   S_RAIN_NOW, S_RAIN_UNTIL, S_RAIN_IN, S_RAIN_AT, S_DRY_UNTIL, S_FROST,
   S_GUSTS, S_UV, S_SUNSET, S_SUNRISE, S_WAITING, S_NO_LOC, S_NO_NET,
-  S_OFF, S_HILO, S_STEPS, S_COUNT
+  S_OFF, S_HILO, S_STEPS, S_SNOW_NOW, S_SNOW_UNTIL, S_SNOW_IN, S_SNOW_AT, S_COUNT
 };
 
 static const char *const STR[LANG_COUNT][S_COUNT] = {
@@ -16,30 +16,35 @@ static const char *const STR[LANG_COUNT][S_COUNT] = {
     "Frost tonight %s", "Gusts %s", "UV %d at %s", "Sunset %s", "Sunrise %s",
     "Waiting for phone", "No location", "No connection", "Weather off",
     "High %s  Low %s", "steps",
+    "Snow now", "Snow until %s", "Snow in %d min", "Snow at %s",
   },
   [LANG_DE] = {
     "Es regnet", "Regen bis %s", "Regen in %d Min.", "Regen um %s", "Trocken bis %s",
     "Frost heute Nacht %s", "Böen %s", "UV %d um %s", "Sonnenuntergang %s",
     "Sonnenaufgang %s", "Warte auf Handy", "Kein Standort", "Keine Verbindung",
     "Wetter aus", "Max %s  Min %s", "Schritte",
+    "Es schneit", "Schnee bis %s", "Schnee in %d Min.", "Schnee um %s",
   },
   [LANG_FR] = {
     "Il pleut", "Pluie jusqu'à %s", "Pluie dans %d min", "Pluie à %s",
     "Sec jusqu'à %s", "Gel cette nuit %s", "Rafales %s", "UV %d à %s",
     "Coucher %s", "Lever %s", "En attente du tél.", "Pas de position",
     "Pas de connexion", "Météo désactivée", "Max %s  Min %s", "pas",
+    "Il neige", "Neige jusqu'à %s", "Neige dans %d min", "Neige à %s",
   },
   [LANG_IT] = {
     "Piove", "Pioggia fino alle %s", "Pioggia tra %d min", "Pioggia alle %s",
     "Asciutto fino alle %s", "Gelo stanotte %s", "Raffiche %s", "UV %d alle %s",
     "Tramonto %s", "Alba %s", "In attesa del tel.", "Nessuna posizione",
     "Nessuna connessione", "Meteo disattivato", "Max %s  Min %s", "passi",
+    "Nevica", "Neve fino alle %s", "Neve tra %d min", "Neve alle %s",
   },
   [LANG_ES] = {
     "Llueve", "Lluvia hasta las %s", "Lluvia en %d min", "Lluvia a las %s",
     "Seco hasta las %s", "Helada esta noche %s", "Rachas %s", "UV %d a las %s",
     "Puesta de sol %s", "Amanecer %s", "Esperando al móvil", "Sin ubicación",
     "Sin conexión", "Tiempo desactivado", "Máx %s  Mín %s", "pasos",
+    "Nieva", "Nieve hasta las %s", "Nieve en %d min", "Nieve a las %s",
   },
 };
 
@@ -230,6 +235,20 @@ static void add_amount(char *buf, size_t n, int i) {
   snprintf(buf + len, n - len, " · %s", rb);
 }
 
+// Snow instead of rain in hour i (WMO snow and snow-shower codes).
+static bool wx_snow(int i) {
+  if (i < 0 || i >= g_wx.count) return false;
+  uint8_t c = g_wx.code[i];
+  return (c >= 71 && c <= 77) || c == 85 || c == 86;
+}
+
+// The rain string, or its snow twin when hour i brings snow.
+static const char *rs(int id, int i) {
+  if (!wx_snow(i)) return tr(id);
+  return tr(id == S_RAIN_NOW ? S_SNOW_NOW : id == S_RAIN_UNTIL ? S_SNOW_UNTIL
+            : id == S_RAIN_IN ? S_SNOW_IN : S_SNOW_AT);
+}
+
 static bool smart_rain(char *buf, size_t n, time_t now, int i) {
   char tb[16];
   bool raining = false;
@@ -247,7 +266,7 @@ static bool smart_rain(char *buf, size_t n, time_t now, int i) {
           int mins = (int)(((time_t)g_wx.m15_t0 + k * 900 - now) / 60);
           mins = ((mins + 2) / 5) * 5;
           if (mins < 5) mins = 5;
-          snprintf(buf, n, tr(S_RAIN_IN), mins);
+          snprintf(buf, n, rs(S_RAIN_IN, wx_index_at((time_t)g_wx.m15_t0 + k * 900)), mins);
           add_amount(buf, n, i);
           return true;
         }
@@ -260,7 +279,7 @@ static bool smart_rain(char *buf, size_t n, time_t now, int i) {
     for (int k = i + 1; k <= i + 2 && k < g_wx.count; k++) {
       if (wx_wet(k)) {
         fmt_clock(tb, sizeof(tb), hour_start(k));
-        snprintf(buf, n, tr(S_RAIN_AT), tb);
+        snprintf(buf, n, rs(S_RAIN_AT, k), tb);
         add_amount(buf, n, k);
         return true;
       }
@@ -272,12 +291,12 @@ static bool smart_rain(char *buf, size_t n, time_t now, int i) {
     for (int k = i + 1; k <= i + 12 && k < g_wx.count; k++) {
       if (!wx_wet(k)) {
         fmt_clock(tb, sizeof(tb), hour_start(k));
-        snprintf(buf, n, tr(S_RAIN_UNTIL), tb);
+        snprintf(buf, n, rs(S_RAIN_UNTIL, i), tb);
         add_amount(buf, n, i);
         return true;
       }
     }
-    snprintf(buf, n, "%s", tr(S_RAIN_NOW));
+    snprintf(buf, n, "%s", rs(S_RAIN_NOW, i));
     add_amount(buf, n, i);
     return true;
   }

@@ -48,14 +48,21 @@ static void settings_default(void) {
     .owncolors = 0,
     .textcolor = 0xFF,    // white
     .accentcolor = 0xFF,  // white until picked
+    .chargebuzz = 1,
   };
 }
 
 static void settings_load(void) {
   settings_default();
-  if (persist_exists(P_SETTINGS) && persist_get_size(P_SETTINGS) == (int)sizeof(Settings)) {
-    Settings s;
-    persist_read_data(P_SETTINGS, &s, sizeof(s));
+  int size = persist_exists(P_SETTINGS) ? persist_get_size(P_SETTINGS) : 0;
+  if (size > 0 && size <= (int)sizeof(Settings)) {
+    Settings s = g_set;  // fields an older version did not have keep their defaults
+    persist_read_data(P_SETTINGS, &s, size);
+    if (s.version == 5) {
+      // Version 6 only added chargebuzz at the end.
+      s.chargebuzz = 1;
+      s.version = SETTINGS_VERSION;
+    }
     if (s.version == SETTINGS_VERSION) g_set = s;
   }
 }
@@ -120,7 +127,34 @@ static void update_health(void) {
 #endif
 }
 
+// Buzzes while charging: a short one when the cable goes in, a double one at
+// 80 % and a long triple one when full. Silent in Quiet Time, and never for
+// the state the watch is already in when the face starts.
+static void charge_buzz(BatteryChargeState s) {
+  static bool s_known, s_plugged, s_charging;
+  static uint8_t s_pct;
+  if (s_known && g_set.chargebuzz && !quiet_time_is_active()) {
+    if (s.is_plugged && !s_plugged) {
+      vibes_short_pulse();
+    } else if (s.is_plugged && s_plugged) {
+      bool full = (s.charge_percent >= 100 && s_pct < 100) ||
+                  (s_charging && !s.is_charging && s_pct >= 80);
+      if (full) {
+        static const uint32_t pattern[] = { 300, 150, 300, 150, 500 };
+        vibes_enqueue_custom_pattern((VibePattern){ .durations = pattern, .num_segments = 5 });
+      } else if (s.charge_percent >= 80 && s_pct < 80) {
+        vibes_double_pulse();
+      }
+    }
+  }
+  s_known = true;
+  s_plugged = s.is_plugged;
+  s_charging = s.is_charging;
+  s_pct = s.charge_percent;
+}
+
 static void battery_handler(BatteryChargeState s) {
+  charge_buzz(s);
   g_view.battery = s.charge_percent;
   g_view.charging = s.is_charging || s.is_plugged;
   if (s_canvas) layer_mark_dirty(s_canvas);
@@ -235,6 +269,7 @@ static bool read_settings(DictionaryIterator *it) {
   s.stepgoal = read_int(it, MESSAGE_KEY_StepGoal, s.stepgoal);
   s.stepcolor = read_int(it, MESSAGE_KEY_StepColor, s.stepcolor);
   s.rainalert = read_int(it, MESSAGE_KEY_RainAlert, s.rainalert);
+  s.chargebuzz = read_int(it, MESSAGE_KEY_ChargeBuzz, s.chargebuzz) ? 1 : 0;
   s.owncolors = read_int(it, MESSAGE_KEY_OwnColors, s.owncolors);
   // The colour pickers send 24-bit RGB; keep the nearest Pebble colour.
   if (dict_find(it, MESSAGE_KEY_TextColor)) s.textcolor = GColorFromHEX(read_int(it, MESSAGE_KEY_TextColor, 0)).argb;

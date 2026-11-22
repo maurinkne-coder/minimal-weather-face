@@ -12,13 +12,13 @@ var DEFAULTS = {
   Frost: true, Gust: '50', Uv: '6', SunLine: true,
   Lang: '0', Clock: '0', TempUnit: '0', RainUnit: '0', WindUnit: '0',
   Updates: true, Interval: '30', Tilt: '0', BattLine: '1', StepBar: true, StepGoal: '10000', StepColor: '0', RainAlert: '0',
-  OwnColors: false, TextColor: 'FFFFFF', AccentColor: '55FFFF', Model: 'best_match', LocMode: 'gps', City: ''
+  OwnColors: false, TextColor: 'FFFFFF', AccentColor: '55FFFF', ChargeBuzz: true, Model: 'best_match', LocMode: 'gps', City: ''
 };
 
 var WATCH_KEYS = ['Theme', 'Range', 'Corner', 'Anim', 'Frost', 'Gust', 'Uv', 'SunLine',
                   'Lang', 'Clock', 'TempUnit', 'RainUnit', 'WindUnit', 'Updates', 'Interval', 'Tilt',
                   'BattLine', 'StepBar', 'StepGoal', 'StepColor', 'RainAlert',
-                  'OwnColors', 'TextColor', 'AccentColor'];
+                  'OwnColors', 'TextColor', 'AccentColor', 'ChargeBuzz'];
 
 // ---------------------------------------------------------------------------
 // Settings

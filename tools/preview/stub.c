@@ -41,7 +41,8 @@ static void fake(time_t now, int scenario) {
     g_wx.temp[i] = (int16_t)lround((base + 7 * sin((h - 9) / 24.0 * 2 * M_PI)) * 10);
     g_wx.day[i] = h >= 7 && h < 17;
     g_wx.code[i] = 2; g_wx.prob[i] = 10; g_wx.gust[i] = 20; g_wx.uv[i] = g_wx.day[i] ? 20 : 0;
-    if (i >= 3 && i <= 7) { g_wx.precip[i] = (uint8_t)(i == 5 ? 52 : i * 4); g_wx.prob[i] = 80; g_wx.code[i] = 61; }
+    if (i >= 3 && i <= 7) { g_wx.precip[i] = (uint8_t)(i == 5 ? 90 : i * 4); g_wx.prob[i] = 80; g_wx.code[i] = scenario == 1 ? 73 : 61; }
+    if (i == 6 && scenario != 1) { g_wx.precip[i] = 60; g_wx.code[i] = 95; }  // thunderstorm
     if (i >= 20 && i <= 22) { g_wx.precip[i] = 3; g_wx.prob[i] = 35; g_wx.code[i] = 51; }
   }
   g_wx.m15_t0 = (uint32_t)(now - now % 1800); g_wx.m15_count = 8;
@@ -68,12 +69,14 @@ int main(int argc, char **argv) {
     .updates = 1, .interval = 30, .battline = (uint8_t)(atoi(argv[3]) == 1 ? 2 : 1), .stepbar = 1, .stepgoal = 10000, .tilt = (int16_t)(argc > 10 ? atoi(argv[10]) : 0) };
   if (argc > 11) { g_set.owncolors = 1; g_set.textcolor = (uint8_t)strtol(argv[11], NULL, 16); g_set.accentcolor = (uint8_t)strtol(argv[12], NULL, 16); }
   fake(now, atoi(argv[5]));
-  g_view = (ViewState){ .now = now, .reveal = 1000, .scrub = atoi(argv[8]), .battery = 80, .steps = 6214, .heart = 64, .step_goal = 10000 };
+  bool scenario0 = atoi(argv[5]) == 0;
+  g_view = (ViewState){ .now = now, .reveal = 1000, .scrub = atoi(argv[8]), .battery = 80, .charging = scenario0, .steps = 6214, .heart = 64, .step_goal = 10000 };
   struct GContext ctx = {0}; Layer l;
   draw_face(&l, &ctx);
   return 0;
 }
-void tilt_apply(GContext *c, GRect b, int deg, GColor bg) { (void)b; if (deg) printf("[\"rotate\",%d,%d]\n", deg, bg.argb); (void)c; }
+bool tilt_begin(GContext *c, GRect b, GColor bg) { (void)c; (void)b; printf("[\"tilt_begin\",%d]\n", bg.argb); return true; }
+void tilt_end(GContext *c, GRect b, int deg) { (void)c; (void)b; printf("[\"tilt_end\",%d]\n", deg); }
 void tilt_release(void) {}
 // Rough text size, enough to test label placement.
 GSize graphics_text_layout_get_content_size(const char *t, GFont f, GRect r, GTextOverflowMode o, GTextAlignment a) {

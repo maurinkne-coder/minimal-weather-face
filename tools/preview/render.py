@@ -86,9 +86,23 @@ def render(log, w, h, round_, out):
             _, a, pts = c
             q = [(pts[i] * S, pts[i + 1] * S) for i in range(0, len(pts), 2)]
             d.line(q + [q[0]], fill=col(a), width=S)
-        elif k == "rotate":
-            _, deg, a = c
-            img = img.rotate(-deg, resample=Image.NEAREST, center=(w * S / 2, h * S / 2), fillcolor=col(a))
+        elif k == "tilt_begin":
+            # Set the text layer aside (background see-through) and clear.
+            _, a = c
+            bgc = col(a)
+            layer = img.convert("RGBA")
+            px = layer.load()
+            for yy in range(layer.height):
+                for xx in range(layer.width):
+                    if px[xx, yy][:3] == bgc:
+                        px[xx, yy] = (0, 0, 0, 0)
+            img = Image.new("RGB", img.size, bgc)
+            d = ImageDraw.Draw(img)
+        elif k == "tilt_end":
+            # Lay the text back on top, turned, with bilinear smoothing.
+            _, deg = c
+            turned = layer.rotate(-deg, resample=Image.BILINEAR, center=(w * S / 2, h * S / 2))
+            img = Image.alpha_composite(img.convert("RGBA"), turned).convert("RGB")
             d = ImageDraw.Draw(img)
         elif k == "digits":
             _, s, cx, top, gap, a = c

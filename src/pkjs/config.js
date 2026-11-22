@@ -157,6 +157,13 @@ module.exports = [
       },
       {
         type: 'toggle',
+        messageKey: 'ChargeBuzz',
+        label: 'Charging buzz',
+        description: 'A short buzz when you plug the watch in, a double buzz at 80% and a long one when it is full. A lightning bolt shows while it charges. Silent in Quiet Time.',
+        defaultValue: true
+      },
+      {
+        type: 'toggle',
         messageKey: 'StepBar',
         label: 'Step goal bar',
         description: 'A bar just below the middle text that fills up as you walk towards your step goal.',

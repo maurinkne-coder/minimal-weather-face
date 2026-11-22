@@ -222,8 +222,27 @@ static int bar_len(int32_t p) {
   return len < 3 ? 3 : len;
 }
 
-// Colour grade for an hour's rain (0.1 mm): light, medium or heavy.
-static GColor rain_color(const Theme *th, int p) {
+// True for the light backgrounds (Daylight, Sand).
+static bool light_bg(const Theme *th) {
+  uint8_t b = th->bg.argb;
+  return ((b >> 4) & 3) + ((b >> 2) & 3) + (b & 3) >= 7;
+}
+
+// Colour of a rain bar from the amount (0.1 mm per hour) and the hour's
+// weather code. Theme blues grade light, medium and heavy rain; then fixed
+// warning colours: orange for strong rain (8 mm/h and more), red for a
+// thunderstorm or a downpour (20 mm/h and more). Snow is white (dark grey on
+// light backgrounds). Mono keeps its greys.
+static GColor rain_color(const Theme *th, int p, uint8_t code) {
+#ifdef PBL_COLOR
+  if (g_set.theme != THEME_MONO) {
+    if (code >= 95 || p >= 200) return GColorRed;
+    if (p >= 80) return GColorOrange;
+    if ((code >= 71 && code <= 77) || code == 85 || code == 86) {
+      return light_bg(th) ? GColorDarkGray : GColorWhite;
+    }
+  }
+#endif
   return p >= 40 ? th->heavy : p >= 10 ? th->medium : th->light;
 }
 
@@ -287,7 +306,8 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
       continue;
     }
     // Colour = how much; solid = likely (50 % or more), outline = unlikely.
-    GColor c = rain_color(th, rate);
+    int hi = wx_index_at(slot < now ? now : slot);
+    GColor c = rain_color(th, rate, hi >= 0 ? g_wx.code[hi] : 0);
     graphics_context_set_fill_color(ctx, c);
     graphics_context_set_stroke_color(ctx, c);
     graphics_context_set_stroke_width(ctx, 1);
@@ -295,19 +315,16 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
               track_pt(b, f1, RAIN_EDGE + len), track_pt(b, f0, RAIN_EDGE + len), likely);
   }
 
-  // "Now" marker on the base line, and the scroll cursor during a wrist flick.
-  GPoint now_p = track_pt(b, 0, RAIN_EDGE);
-  graphics_context_set_fill_color(ctx, th->bg);
-  graphics_fill_circle(ctx, now_p, 6);
-  graphics_context_set_fill_color(ctx, th->fg);
-  graphics_fill_circle(ctx, now_p, 4);
+  // "Now" is a short tick from the screen edge across the base line, and the
+  // scroll cursor during a wrist flick a matching tick in the accent colour:
+  // small marks that leave the bars and the text in view.
+  graphics_context_set_stroke_width(ctx, 2);
+  graphics_context_set_stroke_color(ctx, th->fg);
+  graphics_draw_line(ctx, track_pt(b, 0, 0), track_pt(b, 0, RAIN_EDGE + 3));
   if (g_view.scrub >= 0) {
     int32_t f = (int32_t)((int64_t)g_view.scrub * FRAC / (range * 10));
-    GPoint p = track_pt(b, f, RAIN_EDGE);
-    graphics_context_set_fill_color(ctx, th->bg);
-    graphics_fill_circle(ctx, p, 6);
-    graphics_context_set_fill_color(ctx, th->accent);
-    graphics_fill_circle(ctx, p, 4);
+    graphics_context_set_stroke_color(ctx, th->accent);
+    graphics_draw_line(ctx, track_pt(b, f, 0), track_pt(b, f, RAIN_EDGE + 3));
   }
 }
 
@@ -332,14 +349,10 @@ static void upper_utf8(char *s) {
   }
 }
 
-void draw_face(Layer *layer, GContext *ctx) {
-  GRect b = layer_get_bounds(layer);
-  time_t now = g_view.now;
-  Theme th = current_theme(now);
-
-  graphics_context_set_fill_color(ctx, th.bg);
-  graphics_fill_rect(ctx, b, 0, GCornerNone);
-
+// Everything except the forecast ring: date, clock, info row, lines and
+// the bottom line. Drawn on top of the ring.
+static void draw_text_layer(GContext *ctx, GRect b, const Theme *thp, time_t now) {
+  const Theme th = *thp;
   char hh[4], mm[4], date[16], left[40], right[64], corner[24];
   text_clock_parts(hh, sizeof(hh), mm, sizeof(mm), now);
   text_date(date, sizeof(date), now);
@@ -378,6 +391,8 @@ void draw_face(Layer *layer, GContext *ctx) {
   digits_draw(ctx, hh, cx, hh_top, GAP, th.fg, th.bg);
   digits_draw(ctx, mm, cx, mm_top, GAP, th.fg, th.bg);
   const int corner_y = mm_top + CAP + SMALL_GAP - SMALL_PAD;
+  int line_w = 0;  // width of the bottom line, for the symbols beside it
+  GRect wide_s = GRect(0, 0, 200, 18);
   if (g_set.corner == CORNER_TEMP) {
     // Today's low, now and high: the current temperature bright in the middle.
     char lo[12], cur[12], hi[12];
@@ -388,7 +403,8 @@ void draw_face(Layer *layer, GContext *ctx) {
       int wl = graphics_text_layout_get_content_size(lo, g_small_font, wide, GTextOverflowModeFill, GTextAlignmentLeft).w;
       int wc = graphics_text_layout_get_content_size(cur, g_small_font, wide, GTextOverflowModeFill, GTextAlignmentLeft).w;
       int wh = graphics_text_layout_get_content_size(hi, g_small_font, wide, GTextOverflowModeFill, GTextAlignmentLeft).w;
-      int x = cx - (wl + wc + wh + 2 * GAP) / 2;
+      line_w = wl + wc + wh + 2 * GAP;
+      int x = cx - line_w / 2;
       graphics_context_set_text_color(ctx, th.dim);
       graphics_draw_text(ctx, lo, g_small_font, GRect(x, corner_y, wl + 2, 18), GTextOverflowModeFill, GTextAlignmentLeft, NULL);
       x += wl + GAP;
@@ -398,10 +414,29 @@ void draw_face(Layer *layer, GContext *ctx) {
       graphics_context_set_text_color(ctx, th.dim);
       graphics_draw_text(ctx, hi, g_small_font, GRect(x, corner_y, wh + 2, 18), GTextOverflowModeFill, GTextAlignmentLeft, NULL);
     } else {
+      line_w = graphics_text_layout_get_content_size(cur, g_small_font, wide_s, GTextOverflowModeFill, GTextAlignmentLeft).w;
       draw_text_font(ctx, cur, g_small_font, GRect(cx - 70, corner_y, 140, 18), th.fg);
     }
   } else if (corner[0]) {
+    line_w = graphics_text_layout_get_content_size(corner, g_small_font, wide_s, GTextOverflowModeFill, GTextAlignmentLeft).w;
     draw_text_font(ctx, corner, g_small_font, GRect(cx - 70, corner_y, 140, 18), th.dim);
+  }
+
+  // Weather symbol left of the bottom line, lightning bolt right of it while
+  // charging. Both sit on the middle of the small capitals.
+  {
+    const int icon_y = corner_y + SMALL_PAD + SMALL_CAP / 2;
+    const int half = line_w ? line_w / 2 + 6 + 7 : 10;  // 6 px gap, icons 14 px wide
+    bool mono = g_set.theme == THEME_MONO;
+    GColor warm = mono ? th.fg : light_bg(&th) ? GColorOrange : GColorChromeYellow;
+    int i = wx_index_at(now);
+    bool fresh = g_wx.cur_t && now - (time_t)g_wx.cur_t < 75 * 60;
+    if (fresh || i >= 0) {
+      IconColors k = { .cloud = th.fg, .sun = warm, .water = mono ? th.fg : th.medium, .bg = th.bg };
+      uint8_t code = fresh ? g_wx.cur_code : g_wx.code[i];
+      icon_weather(ctx, GPoint(cx - half, icon_y), code, is_daytime(now), &k);
+    }
+    if (g_view.charging) icon_bolt(ctx, GPoint(cx + half, icon_y), warm);
   }
 
   // Battery line just above the info row, step goal bar just below it:
@@ -414,11 +449,9 @@ void draw_face(Layer *layer, GContext *ctx) {
     GColor c = th.fg;
 #ifdef PBL_COLOR
     // Light backgrounds (Daylight, Sand) get the darker green.
-    uint8_t b = th.bg.argb;
-    bool light_bg = ((b >> 4) & 3) + ((b >> 2) & 3) + (b & 3) >= 7;
     if (g_set.battline == BATT_COLOR && g_set.theme != THEME_MONO) {
       // Colourful: green above 30%, orange down to 10%, red below 10%.
-      if (pct > 30) c = light_bg ? GColorIslamicGreen : GColorGreen;
+      if (pct > 30) c = light_bg(&th) ? GColorIslamicGreen : GColorGreen;
       else if (pct >= 10) c = GColorOrange;
       else c = GColorRed;
     } else if (pct <= 20 && !g_view.charging && g_set.theme != THEME_MONO) {
@@ -476,7 +509,16 @@ void draw_face(Layer *layer, GContext *ctx) {
     }
   }
 
-  // Turn the text, then draw the forecast line already turned.
+}
+
+void draw_face(Layer *layer, GContext *ctx) {
+  GRect b = layer_get_bounds(layer);
+  time_t now = g_view.now;
+  Theme th = current_theme(now);
+
+  graphics_context_set_fill_color(ctx, th.bg);
+  graphics_fill_rect(ctx, b, 0, GCornerNone);
+
   static int s_tilt_deg = 0;
   static GSize s_tilt_size;
   if (g_set.tilt != s_tilt_deg || s_tilt_size.w != b.size.w || s_tilt_size.h != b.size.h) {
@@ -485,6 +527,18 @@ void draw_face(Layer *layer, GContext *ctx) {
     s_tilt_f = 0;
     s_tilt_f = tilt_frac(b, g_set.tilt);
   }
-  tilt_apply(ctx, b, g_set.tilt, th.bg);
+
+  // The text always sits on top of the rain bars. Upright, that is just the
+  // drawing order. Turned, the text is drawn first and set aside, the ring is
+  // drawn already turned with plain geometry (so it stays sharp), and the
+  // text is turned and laid over it with smoothed edges.
+  if (g_set.tilt % 360 == 0) {
+    draw_track(ctx, b, &th, now);
+    draw_text_layer(ctx, b, &th, now);
+    return;
+  }
+  draw_text_layer(ctx, b, &th, now);
+  bool turned = tilt_begin(ctx, b, th.bg);
   draw_track(ctx, b, &th, now);
+  if (turned) tilt_end(ctx, b, g_set.tilt);
 }
