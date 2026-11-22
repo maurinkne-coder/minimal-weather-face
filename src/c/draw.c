@@ -407,7 +407,7 @@ static void draw_text_layer(GContext *ctx, GRect b, const Theme *thp, time_t now
     text_temp(cur, sizeof(cur), now);
     GRect wide = GRect(0, 0, 200, 18);
     if (text_hilo(lo, sizeof(lo), hi, sizeof(hi), now)) {
-      const int GAP = 12;
+      const int GAP = 8;   // between low, now and high
       int wl = graphics_text_layout_get_content_size(lo, g_small_font, wide, GTextOverflowModeFill, GTextAlignmentLeft).w;
       int wc = graphics_text_layout_get_content_size(cur, g_small_font, wide, GTextOverflowModeFill, GTextAlignmentLeft).w;
       int wh = graphics_text_layout_get_content_size(hi, g_small_font, wide, GTextOverflowModeFill, GTextAlignmentLeft).w;
