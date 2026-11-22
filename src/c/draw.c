@@ -355,12 +355,14 @@ void draw_face(Layer *layer, GContext *ctx) {
   if (g_set.stepbar && g_view.steps >= 0) {
     int32_t goal = g_view.step_goal > 0 ? g_view.step_goal : 10000;
     int32_t done = g_view.steps > goal ? goal : g_view.steps;
-    GRect r = GRect(cx - BAR_W / 2, cy + 11, BAR_W, 3);
+    // Same thickness and distance from the text as the battery line, so the
+    // two frame the info row evenly.
+    GRect r = GRect(cx - BAR_W / 2, cy + 12, BAR_W, 2);
     graphics_context_set_fill_color(ctx, th.dim);
-    graphics_fill_rect(ctx, r, 1, GCornersAll);
+    graphics_fill_rect(ctx, r, 0, GCornerNone);
     graphics_context_set_fill_color(ctx, th.accent);
     int w = (int)(BAR_W * done / goal);
-    if (w > 0) graphics_fill_rect(ctx, GRect(r.origin.x, r.origin.y, w, 3), 1, GCornersAll);
+    if (w > 0) graphics_fill_rect(ctx, GRect(r.origin.x, r.origin.y, w, 2), 0, GCornerNone);
   }
 
   // Info row: temperature in the main colour, then the smart line in the

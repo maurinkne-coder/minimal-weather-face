@@ -34,15 +34,16 @@ gs = f.getGlyphSet()
 rec = DecomposingRecordingPen(gs)
 gs["eight"].draw(rec)
 coords, ends, flags = f["glyf"]["eight"].getCoordinates(f["glyf"])
-R = 64  # notch radius in font units; centred on the middle of the bar
-M = 365
-outer = []
-for (x, y), fl in zip(list(coords)[:ends[0] + 1], list(flags)[:ends[0] + 1]):
-    outer.append(((x, y), fl & 1))
-left = [((57, 297), 1), ((57, M - R), 1), ((57 + R, M - R), 0), ((57 + R, M), 1),
-        ((57 + R, M + R), 0), ((57, M + R), 1), ((57, 434), 1)]
-right = [((764, 434), 1), ((764, M + R), 1), ((764 - R, M + R), 0), ((764 - R, M), 1),
-         ((764 - R, M - R), 0), ((764, M - R), 1), ((764, 297), 1)]
+# A smooth dip: the side runs straight into the notch and out again with no
+# corner (TrueType quadratic curves, tangent stays vertical at both ends).
+M, W, D = 365, 66, 72  # middle of the bar, half height and depth of the dip
+def dip(x, k):  # k = +1 on the left side, -1 on the right side
+    pts = [((x, M - W), 1), ((x, M - W * 0.45), 0), ((x + k * D, M - W * 0.4), 0), ((x + k * D, M), 1),
+           ((x + k * D, M + W * 0.4), 0), ((x, M + W * 0.45), 0), ((x, M + W), 1)]
+    return [((round(px), round(py)), on) for (px, py), on in pts]
+outer = [((x, y), fl & 1) for (x, y), fl in zip(list(coords)[:ends[0] + 1], list(flags)[:ends[0] + 1])]
+left = [((57, 297), 1)] + dip(57, 1) + [((57, 434), 1)]
+right = [((764, 434), 1)] + list(reversed(dip(764, -1))) + [((764, 297), 1)]
 new = []
 skip = None
 for pt in outer:
@@ -76,10 +77,10 @@ for e in ends[1:]:
 f["glyf"]["eight"] = pen.glyph()
 f.save(dst)
 
-# Slightly rounded corners: every sharp corner between two straight edges of
+# Rounded corners: every sharp corner between two straight edges of
 # the digits (outside and inside the counters) gets a small curve.
 import math
-CORNER = 22  # radius in font units
+CORNER = 70  # radius in font units (capped at 45% of each edge)
 
 f = TTFont(dst)
 glyf = f["glyf"]
