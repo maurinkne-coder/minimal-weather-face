@@ -195,6 +195,10 @@ static Theme current_theme(time_t now) {
   int id = g_set.theme;
   if (id == THEME_AUTO) id = is_daytime(now) ? THEME_DAYLIGHT : THEME_MIDNIGHT;
   Theme th = theme_for(id);
+  if (g_set.owncolors && id != THEME_MONO) {
+    th.fg = argb(g_set.textcolor);
+    th.accent = argb(g_set.accentcolor);
+  }
   if (g_set.stepcolor && g_set.stepcolor < sizeof(STEP_COLORS) && id != THEME_MONO) {
     th.steps = argb(STEP_COLORS[g_set.stepcolor]);
   }

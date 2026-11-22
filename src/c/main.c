@@ -15,6 +15,7 @@ static time_t s_last_request;
 
 #define P_SETTINGS 1
 #define P_WX_SIZE 9
+#define P_ALERTED 8     // start time of the rain we last buzzed for
 #define P_WX_CHUNK 10   // 10, 11, 12 ... hold the forecast in 256-byte pieces
 
 // ---------------------------------------------------------------------------
@@ -44,6 +45,10 @@ static void settings_default(void) {
     .stepbar = 1,
     .stepgoal = 10000,
     .stepcolor = 0,
+    .rainalert = 0,
+    .owncolors = 0,
+    .textcolor = 0xFF,    // white
+    .accentcolor = 0xFF,  // white until picked
   };
 }
 
@@ -230,6 +235,11 @@ static bool read_settings(DictionaryIterator *it) {
   s.stepbar = read_int(it, MESSAGE_KEY_StepBar, s.stepbar);
   s.stepgoal = read_int(it, MESSAGE_KEY_StepGoal, s.stepgoal);
   s.stepcolor = read_int(it, MESSAGE_KEY_StepColor, s.stepcolor);
+  s.rainalert = read_int(it, MESSAGE_KEY_RainAlert, s.rainalert);
+  s.owncolors = read_int(it, MESSAGE_KEY_OwnColors, s.owncolors);
+  // The colour pickers send 24-bit RGB; keep the nearest Pebble colour.
+  if (dict_find(it, MESSAGE_KEY_TextColor)) s.textcolor = GColorFromHEX(read_int(it, MESSAGE_KEY_TextColor, 0)).argb;
+  if (dict_find(it, MESSAGE_KEY_AccentColor)) s.accentcolor = GColorFromHEX(read_int(it, MESSAGE_KEY_AccentColor, 0)).argb;
   if (s.theme >= THEME_COUNT) s.theme = THEME_MIDNIGHT;
   if (s.tilt <= -360 || s.tilt >= 360) s.tilt = 0;
   if (s.lang >= LANG_COUNT) s.lang = LANG_EN;
@@ -332,10 +342,25 @@ static void tap_handler(AccelAxisType axis, int32_t direction) {
 // App
 // ---------------------------------------------------------------------------
 
+// A short double buzz once per rain spell, `rainalert` minutes before it starts.
+static void check_rain_alert(void) {
+  if (!g_set.rainalert || quiet_time_is_active()) return;
+  time_t now = time(NULL);
+  time_t start = wx_next_rain(now);
+  if (!start || start - now > g_set.rainalert * 60) return;
+  time_t last = (time_t)persist_read_int(P_ALERTED);
+  // Forecast updates move the start a little: within 90 min it is the same spell.
+  if (last && start - last < 90 * 60 && last - start < 90 * 60) return;
+  persist_write_int(P_ALERTED, (int32_t)start);
+  static const uint32_t pattern[] = { 120, 120, 120 };
+  vibes_enqueue_custom_pattern((VibePattern){ .durations = pattern, .num_segments = 3 });
+}
+
 static void tick_handler(struct tm *tick_time, TimeUnits changed) {
   g_view.now = time(NULL);
   update_health();
   layer_mark_dirty(s_canvas);
+  check_rain_alert();
   request_weather(false);
 }
 

@@ -11,12 +11,14 @@ var DEFAULTS = {
   Theme: '0', Range: '24', Corner: '4', Anim: true,
   Frost: true, Gust: '50', Uv: '6', SunLine: true,
   Lang: '0', Clock: '0', TempUnit: '0', RainUnit: '0', WindUnit: '0',
-  Updates: true, Interval: '30', Tilt: '0', BattLine: '1', StepBar: true, StepGoal: '10000', StepColor: '0', Model: 'best_match', LocMode: 'gps', City: ''
+  Updates: true, Interval: '30', Tilt: '0', BattLine: '1', StepBar: true, StepGoal: '10000', StepColor: '0', RainAlert: '0',
+  OwnColors: false, TextColor: 0xFFFFFF, AccentColor: 0x55FFFF, Model: 'best_match', LocMode: 'gps', City: ''
 };
 
 var WATCH_KEYS = ['Theme', 'Range', 'Corner', 'Anim', 'Frost', 'Gust', 'Uv', 'SunLine',
                   'Lang', 'Clock', 'TempUnit', 'RainUnit', 'WindUnit', 'Updates', 'Interval', 'Tilt',
-                  'BattLine', 'StepBar', 'StepGoal', 'StepColor'];
+                  'BattLine', 'StepBar', 'StepGoal', 'StepColor', 'RainAlert',
+                  'OwnColors', 'TextColor', 'AccentColor'];
 
 // ---------------------------------------------------------------------------
 // Settings
@@ -37,6 +39,7 @@ function loadSettings() {
 }
 
 function toInt(v) {
+  if (typeof v === 'string' && /^(0x|#)?[0-9a-f]{6}$/i.test(v)) return parseInt(v.replace('#', ''), 16); // colour
   if (v === true) return 1;
   if (v === false) return 0;
   var n = parseInt(v, 10);

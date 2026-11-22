@@ -32,6 +32,29 @@ module.exports = [
         ]
       },
       {
+        type: 'toggle',
+        messageKey: 'OwnColors',
+        label: 'Own text and accent colours',
+        description: 'Replaces the palette\'s colours for the clock and the smart line. The rain stays blue. Not used with Mono.',
+        defaultValue: false
+      },
+      {
+        type: 'color',
+        messageKey: 'TextColor',
+        label: 'Text colour (clock)',
+        defaultValue: 'FFFFFF',
+        sunlight: true,
+        allowGray: true
+      },
+      {
+        type: 'color',
+        messageKey: 'AccentColor',
+        label: 'Accent colour (smart line)',
+        defaultValue: '55FFFF',
+        sunlight: true,
+        allowGray: true
+      },
+      {
         type: 'select',
         messageKey: 'Range',
         label: 'Line length (Pebble Time 2)',
@@ -160,6 +183,19 @@ module.exports = [
       {
         type: 'text',
         defaultValue: 'One line with the most important thing, in this order: rain now or within 2 hours, frost tonight, wind gusts, UV, "dry until", then the next sunset or sunrise.'
+      },
+      {
+        type: 'select',
+        messageKey: 'RainAlert',
+        label: 'Rain warning',
+        description: 'A short double buzz before rain starts, once per shower. Silent in Quiet Time.',
+        defaultValue: '0',
+        options: [
+          { label: 'Off', value: '0' },
+          { label: '15 minutes before', value: '15' },
+          { label: '30 minutes before', value: '30' },
+          { label: '60 minutes before', value: '60' }
+        ]
       },
       { type: 'toggle', messageKey: 'Frost', label: 'Frost tonight', defaultValue: true },
       {

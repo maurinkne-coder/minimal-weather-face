@@ -50,7 +50,7 @@ enum { RAIN_MM, RAIN_IN };
 enum { BATT_OFF, BATT_PLAIN, BATT_COLOR };
 enum { WIND_KMH, WIND_MPH, WIND_MS, WIND_KT, WIND_BFT };
 
-#define SETTINGS_VERSION 4
+#define SETTINGS_VERSION 5
 
 typedef struct {
   uint8_t version;
@@ -74,6 +74,10 @@ typedef struct {
   uint8_t stepbar;    // step goal bar below the info row
   uint16_t stepgoal;  // steps, 0 = your usual daily steps
   uint8_t stepcolor;  // 0 = theme colour, else an entry of STEP_COLORS in draw.c
+  uint8_t rainalert;  // minutes of warning before rain starts, 0 = off
+  uint8_t owncolors;  // use textcolor/accentcolor instead of the palette's
+  uint8_t textcolor;  // Pebble 8-bit colour (0b11RRGGBB)
+  uint8_t accentcolor;
 } Settings;
 
 // ---- Things the face shows that come from the watch itself ----
@@ -99,7 +103,8 @@ extern GFont g_small_font;  // same style, small capitals for date and labels
 int wx_index_at(time_t t);           // hourly index covering t, or -1
 bool wx_wet(int i);                  // meaningful rain in hour i
 int16_t wx_temp_at(time_t t, bool *ok);
-int wx_range_hours(void);            // hours on the ring for this watch
+int wx_range_hours(void);
+time_t wx_next_rain(time_t now);     // start of the coming rain while dry now, else 0            // hours on the ring for this watch
 
 // text.c
 void text_date(char *buf, size_t n, time_t now);
