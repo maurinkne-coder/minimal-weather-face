@@ -81,6 +81,7 @@ typedef struct {
 extern Settings g_set;
 extern Weather g_wx;
 extern ViewState g_view;
+extern GFont g_time_font;   // big digits for the time
 
 // weather.c
 int wx_index_at(time_t t);           // hourly index covering t, or -1

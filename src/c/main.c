@@ -3,6 +3,7 @@
 Settings g_set;
 Weather g_wx;
 ViewState g_view;
+GFont g_time_font;
 
 static Window *s_window;
 static Layer *s_canvas;
@@ -317,6 +318,7 @@ static void canvas_update(Layer *layer, GContext *ctx) {
 }
 
 static void window_load(Window *window) {
+  g_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_TIME_60));
   Layer *root = window_get_root_layer(window);
   s_canvas = layer_create(layer_get_bounds(root));
   layer_set_update_proc(s_canvas, canvas_update);
@@ -328,6 +330,7 @@ static void window_unload(Window *window) {
   tilt_release();
   layer_destroy(s_canvas);
   s_canvas = NULL;
+  fonts_unload_custom_font(g_time_font);
 }
 
 static void init(void) {

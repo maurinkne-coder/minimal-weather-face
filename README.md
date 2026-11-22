@@ -20,12 +20,12 @@ fonts, so the lettering differs a little from the watch._
   The scale stretches to the warmest and coldest moment shown, with a 6° minimum
   so a flat day stays a calm line.
 - **Brightness**: the line is dimmer at night.
-- **Short bars** are rain: inside the line on Round 2, along the screen edge on
-  Time 2. Longer bars mean more rain, and paler bars mean it's less likely.
-  Mono makes them white.
+- **Short bars** are rain, in the same colour as the line: inside the line on
+  Round 2, along the screen edge on Time 2. Longer bars mean more rain, and
+  dimmer bars mean it's less likely.
 - **Small dots** mark 00, 06, 12 and 18 o'clock. The midnight dot is bigger.
 - **Round 2 only**: small numbers show the high and low of the next 24 hours.
-- **Middle**: the date, the time, the current temperature and sky, then a
+- **Middle**: the date, the time in large Inter Light digits, the current temperature and sky, then a
   smart line, then an optional extra line (battery, steps or heart rate).
 - **Wrist flick**: a cursor walks along the line, and the middle shows the
   time, temperature and rain for each hour.

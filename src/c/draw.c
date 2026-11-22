@@ -150,16 +150,16 @@ static Theme theme_for(int id) {
   switch (id) {
     case THEME_DAYLIGHT:
       return (Theme){ GColorWhite, GColorBlack, GColorDarkGray, GColorCobaltBlue,
-                      GColorBlue, GColorPictonBlue };
+                      GColorBlack, GColorLightGray };
     case THEME_MONO:
       return (Theme){ GColorBlack, GColorWhite, GColorLightGray, GColorWhite,
                       GColorWhite, GColorDarkGray };
     case THEME_GRAPHITE:
       return (Theme){ GColorDarkGray, GColorWhite, GColorLightGray, GColorIcterine,
-                      GColorElectricBlue, GColorPictonBlue };
+                      GColorWhite, GColorLightGray };
     default: // THEME_MIDNIGHT
       return (Theme){ GColorBlack, GColorWhite, GColorDarkGray, GColorCeleste,
-                      GColorPictonBlue, GColorCobaltBlue };
+                      GColorWhite, GColorDarkGray };
   }
 }
 
@@ -302,7 +302,7 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
       int32_t ux = (dx * cs + dy * sn) / TRIG_MAX_RATIO;
       int32_t uy = (-dx * sn + dy * cs) / TRIG_MAX_RATIO;
       if (uy > -34 && uy < 44) uy = uy < 5 ? -34 : 44;
-      if (ux > -75 && ux < 75 && uy > -92 && uy < 68) continue; // would sit on the text
+      if (ux > -80 && ux < 80 && uy > -92 && uy < 84) continue; // would sit on the text
       p = GPoint(cx + (ux * cs - uy * sn) / TRIG_MAX_RATIO,
                  cy + (ux * sn + uy * cs) / TRIG_MAX_RATIO);
       char tb[8];
@@ -338,10 +338,13 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
 // Text in the middle
 // ---------------------------------------------------------------------------
 
-static void draw_text_line(GContext *ctx, const char *s, const char *font, GRect r, GColor c) {
+static void draw_text_font(GContext *ctx, const char *s, GFont font, GRect r, GColor c) {
   graphics_context_set_text_color(ctx, c);
-  graphics_draw_text(ctx, s, fonts_get_system_font(font), r, GTextOverflowModeTrailingEllipsis,
-                     GTextAlignmentCenter, NULL);
+  graphics_draw_text(ctx, s, font, r, GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+}
+
+static void draw_text_line(GContext *ctx, const char *s, const char *font, GRect r, GColor c) {
+  draw_text_font(ctx, s, fonts_get_system_font(font), r, c);
 }
 
 void draw_face(Layer *layer, GContext *ctx) {
@@ -367,15 +370,21 @@ void draw_face(Layer *layer, GContext *ctx) {
   const int side = PBL_IF_ROUND_ELSE(36, 26);
   const int w = b.size.w - 2 * side;
   const int x = b.origin.x + side;
-  // Stack: date, time, weather, smart line, extra line; centred on cy.
-  const int top = cy - (corner[0] ? 74 : 64) + PBL_IF_ROUND_ELSE(0, 6);
-
-  draw_text_line(ctx, date, FONT_KEY_GOTHIC_18_BOLD, GRect(x, top, w, 22), th.dim);
-  draw_text_line(ctx, clock, FONT_KEY_BITHAM_42_LIGHT, GRect(x - 10, top + 14, w + 20, 50), th.fg);
-  draw_text_line(ctx, line1, FONT_KEY_GOTHIC_24_BOLD, GRect(x, top + 64, w, 30), th.fg);
-  draw_text_line(ctx, line2, FONT_KEY_GOTHIC_18, GRect(x, top + 92, w, 24), th.accent);
+  // Stack: date, big time, weather, smart line, extra line; centred on cy.
+  const int time_h = 62, time_dy = 6;    // Inter Light 60
+  const int block = 18 + time_h + 28 + 22 + (corner[0] ? 18 : 0);
+  const int top = cy - block / 2 + PBL_IF_ROUND_ELSE(22, 2);
+  int y = top;
+  draw_text_line(ctx, date, FONT_KEY_GOTHIC_18_BOLD, GRect(x, y, w, 22), th.dim);
+  y += time_dy;
+  draw_text_font(ctx, clock, g_time_font, GRect(b.origin.x, y, b.size.w, time_h), th.fg);
+  y += time_h;
+  draw_text_line(ctx, line1, FONT_KEY_GOTHIC_24_BOLD, GRect(x, y, w, 30), th.fg);
+  y += 28;
+  draw_text_line(ctx, line2, FONT_KEY_GOTHIC_18, GRect(x, y, w, 24), th.accent);
+  y += 23;
   if (corner[0]) {
-    draw_text_line(ctx, corner, FONT_KEY_GOTHIC_14, GRect(x, top + 116, w, 18), th.dim);
+    draw_text_line(ctx, corner, FONT_KEY_GOTHIC_14, GRect(x, y, w, 18), th.dim);
   }
 
   // Turn the text, then draw the forecast line already turned.

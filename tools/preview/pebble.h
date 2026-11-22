@@ -39,6 +39,7 @@ typedef enum { GOvalScaleModeFitCircle } GOvalScaleMode;
 #define FONT_KEY_GOTHIC_18_BOLD "gothic18b"
 #define FONT_KEY_GOTHIC_24_BOLD "gothic24b"
 #define FONT_KEY_BITHAM_42_LIGHT "bitham42l"
+typedef struct ResHandle *ResHandle;
 
 #define C(name, v) enum { GColor##name##ARGB8 = (v) };
 C(Black,0xC0) C(White,0xFF) C(LightGray,0xEA) C(DarkGray,0xD5) C(OxfordBlue,0xC1)

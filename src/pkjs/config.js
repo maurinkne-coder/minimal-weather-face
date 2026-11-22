@@ -22,7 +22,7 @@ module.exports = [
         options: [
           { label: 'Midnight (black)', value: '0' },
           { label: 'Daylight (white, easy to read outdoors)', value: '1' },
-          { label: 'Mono (black and white only, no blue rain)', value: '2' },
+          { label: 'Mono (black and white only)', value: '2' },
           { label: 'Graphite (dark grey)', value: '3' },
           { label: 'Automatic (Daylight by day, Midnight at night)', value: '4' }
         ]

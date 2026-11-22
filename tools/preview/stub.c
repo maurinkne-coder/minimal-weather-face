@@ -3,6 +3,11 @@
 #include "../../src/c/contour.h"
 
 Settings g_set; Weather g_wx; ViewState g_view;
+#ifdef PBL_ROUND
+GFont g_time_font = "time60";
+#else
+GFont g_time_font = "time60";
+#endif
 static int W, H;
 struct Layer { int dummy; };
 struct GContext { GColor fill, stroke, text; int sw; };

@@ -47,3 +47,5 @@ GBitmapDataRowInfo gbitmap_get_data_row_info(const GBitmap*, uint16_t);
 GBitmap *graphics_capture_frame_buffer(GContext*); bool graphics_release_frame_buffer(GContext*, GBitmap*);
 void graphics_context_set_compositing_mode(GContext*, GCompOp);
 void graphics_draw_rotated_bitmap(GContext*, GBitmap*, GPoint, int32_t, GPoint);
+enum { RESOURCE_ID_FONT_TIME_64 = 1, RESOURCE_ID_FONT_TIME_60 = 2 };
+ResHandle resource_get_handle(uint32_t); GFont fonts_load_custom_font(ResHandle); void fonts_unload_custom_font(GFont);

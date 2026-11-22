@@ -2,7 +2,9 @@
   "name": "contour",
   "author": "Maurin",
   "version": "1.0.0",
-  "keywords": ["pebble-app"],
+  "keywords": [
+    "pebble-app"
+  ],
   "private": true,
   "dependencies": {
     "pebble-clay": "^1.0.4"
@@ -12,23 +14,67 @@
     "uuid": "ea94434e-5c34-4813-b3d8-c26a8125a27d",
     "sdkVersion": "3",
     "enableMultiJS": true,
-    "targetPlatforms": ["emery", "gabbro"],
+    "targetPlatforms": [
+      "emery",
+      "gabbro"
+    ],
     "watchapp": {
       "watchface": true
     },
-    "capabilities": ["location", "configurable", "health"],
+    "capabilities": [
+      "location",
+      "configurable",
+      "health"
+    ],
     "messageKeys": [
-      "Theme", "Range", "Corner", "Anim",
-      "Frost", "Gust", "Uv", "SunLine",
-      "Lang", "Clock", "TempUnit", "RainUnit", "WindUnit",
-      "Updates", "Interval", "Tilt", "Model", "LocMode", "City",
-      "Request", "JsReady",
-      "WxT0", "WxTemp", "WxPrecip", "WxProb", "WxCode", "WxGust", "WxUv", "WxDay",
-      "WxM15T0", "WxM15", "WxRise", "WxSet",
-      "WxCurTemp", "WxCurCode", "WxCurT", "WxStatus"
+      "Theme",
+      "Range",
+      "Corner",
+      "Anim",
+      "Frost",
+      "Gust",
+      "Uv",
+      "SunLine",
+      "Lang",
+      "Clock",
+      "TempUnit",
+      "RainUnit",
+      "WindUnit",
+      "Updates",
+      "Interval",
+      "Tilt",
+      "Model",
+      "LocMode",
+      "City",
+      "Request",
+      "JsReady",
+      "WxT0",
+      "WxTemp",
+      "WxPrecip",
+      "WxProb",
+      "WxCode",
+      "WxGust",
+      "WxUv",
+      "WxDay",
+      "WxM15T0",
+      "WxM15",
+      "WxRise",
+      "WxSet",
+      "WxCurTemp",
+      "WxCurCode",
+      "WxCurT",
+      "WxStatus"
     ],
     "resources": {
-      "media": []
+      "media": [
+        {
+          "type": "font",
+          "name": "FONT_TIME_60",
+          "file": "fonts/Inter-Light.ttf",
+          "characterRegex": "[0-9:]",
+          "trackingAdjust": -3
+        }
+      ]
     }
   }
 }

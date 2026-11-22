@@ -1,5 +1,6 @@
 """Render the JSON draw log from the stub into a PNG (approximate fonts)."""
-import json, math, sys
+import json, math, os, sys
+HERE = os.path.dirname(os.path.abspath(__file__))
 from PIL import Image, ImageDraw, ImageFont
 
 S = 3  # supersample
@@ -50,6 +51,18 @@ def render(log, w, h, round_, out):
             _, deg, a = c
             img = img.rotate(-deg, resample=Image.NEAREST, center=(w * S / 2, h * S / 2), fillcolor=col(a))
             d = ImageDraw.Draw(img)
+        elif k == "text" and c[2].startswith("time"):
+            _, s, f, x, y, bw, bh, a = c
+            size = int(f[4:])
+            font = ImageFont.truetype(os.path.join(HERE, "../../resources/fonts/Inter-Light.ttf"), size * S)
+            adv = [d.textlength(ch, font=font) - 3 * S for ch in s]
+            tw = sum(adv) + 3 * S
+            if tw > bw * S:
+                overflow.append(s)
+            px = x * S + (bw * S - tw) / 2
+            for ch, a_ in zip(s, adv):
+                d.text((px, y * S), ch, font=font, fill=col(a))
+                px += a_
         elif k == "text":
             _, s, f, x, y, bw, bh, a = c
             fn, size, sq, off = FONTS[f]
