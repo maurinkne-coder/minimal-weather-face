@@ -7,6 +7,7 @@ Font Name "Orbitron" under the OFL, so the changed font gets a new name.
     pip install fonttools
     python3 tools/font/make_digits.py Orbitron_900Black.ttf resources/fonts/ContourDigits-Black.ttf
 """
+import os
 import sys
 from fontTools.ttLib import TTFont
 
@@ -87,15 +88,34 @@ f["glyf"]["eight"] = pen.glyph()
 # Orbitron's pointed diagonal, which reached into its neighbour on the
 # watch. Its corners are rounded with the other digits below.
 FX0, FX1, ST, BAR0 = 57, 680, 153, 250  # left, right, stroke, bar bottom
+BT = BAR0 + ST                         # top of the cross bar
+RS = FX1 - ST                          # left edge of the right stem
+FOURS = {
+    # Two upright stems joined by a bar (the default).
+    "open": [[(FX0, Y1), (FX0 + ST, Y1), (FX0 + ST, BT), (RS, BT), (RS, Y1), (FX1, Y1),
+              (FX1, Y0), (RS, Y0), (RS, BAR0), (FX0, BAR0)]],
+    # Open, with the bar running a little past the right stem.
+    "spur": [[(FX0, Y1), (FX0 + ST, Y1), (FX0 + ST, BT), (RS, BT), (RS, Y1), (FX1, Y1),
+              (FX1, BT), (FX1 + 90, BT), (FX1 + 90, BAR0), (FX1, BAR0), (FX1, Y0), (RS, Y0),
+              (RS, BAR0), (FX0, BAR0)]],
+    # Open, with a shorter left stem.
+    "short": [[(FX0, 560), (FX0 + ST, 560), (FX0 + ST, BT), (RS, BT), (RS, Y1), (FX1, Y1),
+               (FX1, Y0), (RS, Y0), (RS, BAR0), (FX0, BAR0)]],
+    # Open, with the left stem leaning.
+    "lean": [[(FX0, BAR0), (FX0, BT), (FX0 + 143, Y1), (FX0 + 143 + ST, Y1), (FX0 + ST, BT),
+              (RS, BT), (RS, Y1), (FX1, Y1), (FX1, Y0), (RS, Y0), (RS, BAR0)]],
+    # Closed, with a blunt diagonal (flat top instead of a point).
+    "blunt": [[(FX0, BAR0), (FX0, BT), (FX0 + 373, Y1), (FX1, Y1), (FX1, Y0), (RS, Y0), (RS, BAR0)],
+              [(FX0 + 237, BT), (RS, BT), (RS, 601)]],
+}
 pen = TTGlyphPen(None)
-four = [(FX0, Y1), (FX0 + ST, Y1), (FX0 + ST, BAR0 + ST), (FX1 - ST, BAR0 + ST),
-        (FX1 - ST, Y1), (FX1, Y1), (FX1, Y0), (FX1 - ST, Y0), (FX1 - ST, BAR0), (FX0, BAR0)]
-pen.moveTo(four[0])
-for pt in four[1:]:
-    pen.lineTo(pt)
-pen.closePath()
+for contour in FOURS[os.environ.get("FOUR", "open")]:
+    pen.moveTo(contour[0])
+    for pt in contour[1:]:
+        pen.lineTo(pt)
+    pen.closePath()
 f["glyf"]["four"] = pen.glyph()
-f["hmtx"]["four"] = (FX1 + FX0, FX0)
+f["hmtx"]["four"] = (max(x for c in FOURS[os.environ.get("FOUR", "open")] for x, _ in c) + FX0, FX0)
 f.save(dst)
 
 # Rounded corners: every sharp corner between two straight edges of
