@@ -45,7 +45,7 @@ static void fake(time_t now, int scenario) {
     g_wx.temp[i] = (int16_t)lround((base + 7 * sin((h - 9) / 24.0 * 2 * M_PI)) * 10);
     g_wx.day[i] = h >= 7 && h < 17;
     g_wx.code[i] = 2; g_wx.prob[i] = 10; g_wx.gust[i] = 20; g_wx.uv[i] = g_wx.day[i] ? 20 : 0;
-    if (i >= 3 && i <= 7) { g_wx.precip[i] = (uint8_t)(i * 4); g_wx.prob[i] = 80; g_wx.code[i] = 61; }
+    if (i >= 3 && i <= 7) { g_wx.precip[i] = (uint8_t)(i == 5 ? 52 : i * 4); g_wx.prob[i] = 80; g_wx.code[i] = 61; }
     if (i >= 20 && i <= 22) { g_wx.precip[i] = 3; g_wx.prob[i] = 35; g_wx.code[i] = 51; }
   }
   g_wx.m15_t0 = (uint32_t)(now - now % 900); g_wx.m15_count = 8;
@@ -93,6 +93,11 @@ GPath *gpath_create(const GPathInfo *info) { GPath *p = malloc(sizeof *p); p->in
 void gpath_destroy(GPath *p) { free(p); }
 void gpath_draw_filled(GContext *c, GPath *p) {
   printf("[\"poly\",%d,[", c->fill.argb);
+  for (uint32_t i = 0; i < p->info.num_points; i++) printf("%s%d,%d", i ? "," : "", p->info.points[i].x, p->info.points[i].y);
+  printf("]]\n");
+}
+void gpath_draw_outline(GContext *c, GPath *p) {
+  printf("[\"polyline\",%d,[", c->stroke.argb);
   for (uint32_t i = 0; i < p->info.num_points; i++) printf("%s%d,%d", i ? "," : "", p->info.points[i].x, p->info.points[i].y);
   printf("]]\n");
 }

@@ -60,6 +60,7 @@ C(Celeste,0xEF)
 #define GColorCeleste ((GColor){GColorCelesteARGB8})
 #define GColorIcterine ((GColor){GColorIcterineARGB8})
 #define GColorElectricBlue ((GColor){GColorElectricBlueARGB8})
+#define GColorOxfordBlue ((GColor){GColorOxfordBlueARGB8})
 
 int32_t sin_lookup(int32_t a);
 int32_t cos_lookup(int32_t a);
@@ -82,4 +83,5 @@ typedef struct { uint32_t num_points; GPoint *points; } GPathInfo;
 typedef struct GPath GPath;
 GPath *gpath_create(const GPathInfo *info);
 void gpath_draw_filled(GContext *c, GPath *p);
+void gpath_draw_outline(GContext *c, GPath *p);
 void gpath_destroy(GPath *p);

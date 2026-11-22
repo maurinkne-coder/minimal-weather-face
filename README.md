@@ -17,10 +17,20 @@ fonts, so the lettering differs a little from the watch._
   starting at the dot at the top (now) and running clockwise. Round 2 shows
   24 hours. On Time 2 you can choose 12, 24 or 48 hours.
 - **Bars** grow inward from a faint base line: the longer the bar, the more
-  rain (full length at 4 mm/h). Likely rain is full blue and unlikely rain is
-  pale. In Mono they're white and grey.
+  rain (full length at 4 mm/h).
+- **Colour grades the amount**, so you can tell at a glance:
+
+  | Theme | light (< 1 mm/h) | medium (1 to 4 mm/h) | heavy (4 mm/h or more) |
+  |---|---|---|---|
+  | Midnight | cobalt blue | picton blue | electric blue (bright cyan) |
+  | Daylight | picton blue | blue | dark navy |
+  | Graphite | picton blue | electric blue | white |
+  | Mono | dark grey | light grey | white |
+
+- **Solid bars** mean rain is likely (50 % or more). **Outlined bars** mean it
+  is unlikely.
 - **Rain amounts**: each rain spell is labelled with its heaviest hour, like
-  `2.8 mm` (or `.11 in`), placed as close to the longest bar as fits beside
+  `2.8 mm` (or `.11 in`), placed as close to the longest bar as it fits beside
   the text.
 - **Small dots** mark 00, 06, 12 and 18 o'clock. The midnight dot is bigger.
 - **Middle**: the date, the time in large Inter Light digits, the current temperature and sky, then a

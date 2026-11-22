@@ -3,14 +3,16 @@
 // The face: an hourly rain bar chart round the edge of the screen, starting at
 // the dot at the top ("now") and running clockwise into the coming hours.
 // Bars grow inward from a faint base line: the longer the bar, the more rain.
-// Likely rain is full blue, unlikely rain pale, and each rain spell is
+// The colour grades the amount (light < 1 mm/h, medium 1-4, heavy >= 4), solid
+// bars are likely rain and outlined bars unlikely rain, and each rain spell is
 // labelled with its heaviest hour in mm (or inch). Small dots mark 00, 06, 12
 // and 18 o'clock.
 
 #define FRAC 65536
 
 typedef struct {
-  GColor bg, fg, dim, accent, rain, rain_light;
+  GColor bg, fg, dim, accent;
+  GColor base, light, medium, heavy;   // rain: base line, < 1, 1-4, >= 4 mm/h
 } Theme;
 
 // ---------------------------------------------------------------------------
@@ -141,16 +143,16 @@ static Theme theme_for(int id) {
   switch (id) {
     case THEME_DAYLIGHT:
       return (Theme){ GColorWhite, GColorBlack, GColorDarkGray, GColorCobaltBlue,
-                      GColorBlue, GColorPictonBlue };
+                      GColorLightGray, GColorPictonBlue, GColorBlue, GColorOxfordBlue };
     case THEME_MONO:
       return (Theme){ GColorBlack, GColorWhite, GColorLightGray, GColorWhite,
-                      GColorWhite, GColorDarkGray };
+                      GColorDarkGray, GColorDarkGray, GColorLightGray, GColorWhite };
     case THEME_GRAPHITE:
       return (Theme){ GColorDarkGray, GColorWhite, GColorLightGray, GColorIcterine,
-                      GColorElectricBlue, GColorPictonBlue };
+                      GColorLightGray, GColorPictonBlue, GColorElectricBlue, GColorWhite };
     default: // THEME_MIDNIGHT
       return (Theme){ GColorBlack, GColorWhite, GColorDarkGray, GColorCeleste,
-                      GColorPictonBlue, GColorCobaltBlue };
+                      GColorCobaltBlue, GColorCobaltBlue, GColorPictonBlue, GColorElectricBlue };
   }
 }
 
@@ -184,12 +186,18 @@ static int bar_len(int32_t p) {
   return len < 3 ? 3 : len;
 }
 
-static void fill_quad(GContext *ctx, GPoint a, GPoint c, GPoint d, GPoint e) {
+// Colour grade for an hour's rain (0.1 mm): light, medium or heavy.
+static GColor rain_color(const Theme *th, int p) {
+  return p >= 40 ? th->heavy : p >= 10 ? th->medium : th->light;
+}
+
+static void draw_quad(GContext *ctx, GPoint a, GPoint c, GPoint d, GPoint e, bool filled) {
   GPoint pts[4] = {a, c, d, e};
   GPathInfo info = { .num_points = 4, .points = pts };
   GPath *path = gpath_create(&info);
   if (!path) return;
-  gpath_draw_filled(ctx, path);
+  if (filled) gpath_draw_filled(ctx, path);
+  else gpath_draw_outline(ctx, path);
   gpath_destroy(path);
 }
 
@@ -245,7 +253,7 @@ static void draw_rain_label(GContext *ctx, GRect b, const Theme *th, time_t now,
       GPoint p = track_pt(b, f, in);
       GRect box = GRect(p.x - 20, p.y - 7, 40, 14);
       if (!label_fits(b, box)) continue;
-      graphics_context_set_text_color(ctx, th->rain);
+      graphics_context_set_text_color(ctx, th->medium);
       graphics_draw_text(ctx, tb, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
                          GRect(p.x - 22, p.y - 10, 44, 16), GTextOverflowModeFill,
                          GTextAlignmentCenter, NULL);
@@ -273,7 +281,7 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
   }
 
   // A faint base line round the edge, so dry hours still read as "dry".
-  graphics_context_set_stroke_color(ctx, th->rain_light);
+  graphics_context_set_stroke_color(ctx, th->base);
   graphics_context_set_stroke_width(ctx, 1);
   GPoint prev = track_pt(b, 0, RAIN_EDGE);
   for (int s = 1; s <= shown; s++) {
@@ -296,9 +304,13 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
       if (f1 <= f0) continue;
       if (f1 * 1000 / FRAC > g_view.reveal) continue;
       bool likely = g_wx.prob[k] == PROB_UNKNOWN || g_wx.prob[k] >= 50;
-      graphics_context_set_fill_color(ctx, likely ? th->rain : th->rain_light);
-      fill_quad(ctx, track_pt(b, f0, RAIN_EDGE), track_pt(b, f1, RAIN_EDGE),
-                track_pt(b, f1, RAIN_EDGE + len), track_pt(b, f0, RAIN_EDGE + len));
+      // Colour = how much; solid = likely (50 % or more), outline = unlikely.
+      GColor c = rain_color(th, g_wx.precip[k]);
+      graphics_context_set_fill_color(ctx, c);
+      graphics_context_set_stroke_color(ctx, c);
+      graphics_context_set_stroke_width(ctx, 1);
+      draw_quad(ctx, track_pt(b, f0, RAIN_EDGE), track_pt(b, f1, RAIN_EDGE),
+                track_pt(b, f1, RAIN_EDGE + len), track_pt(b, f0, RAIN_EDGE + len), likely);
     }
   }
 
