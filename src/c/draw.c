@@ -347,7 +347,15 @@ void draw_face(Layer *layer, GContext *ctx) {
     graphics_fill_rect(ctx, r, 0, GCornerNone);
     GColor c = th.fg;
 #ifdef PBL_COLOR
-    if (pct <= 20 && !g_view.charging && g_set.theme != THEME_MONO) c = GColorRed;
+    bool light_bg = gcolor_equal(th.bg, GColorWhite);
+    if (g_set.battline == BATT_COLOR && g_set.theme != THEME_MONO) {
+      // Colourful: green above 30%, orange down to 10%, red below 10%.
+      if (pct > 30) c = light_bg ? GColorIslamicGreen : GColorGreen;
+      else if (pct >= 10) c = GColorOrange;
+      else c = GColorRed;
+    } else if (pct <= 20 && !g_view.charging && g_set.theme != THEME_MONO) {
+      c = GColorRed;
+    }
 #endif
     graphics_context_set_fill_color(ctx, c);
     graphics_fill_rect(ctx, GRect(r.origin.x, r.origin.y, BAR_W * pct / 100, 2), 0, GCornerNone);

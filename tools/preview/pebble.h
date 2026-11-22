@@ -48,8 +48,18 @@ C(Folly,0xF1) C(Orange,0xF4) C(ChromeYellow,0xF8) C(Icterine,0xFD) C(Inchworm,0x
 C(MediumAquamarine,0xDE) C(ElectricBlue,0xDF) C(PictonBlue,0xDB) C(VeryLightBlue,0xD7)
 C(LavenderIndigo,0xE7) C(Indigo,0xD2) C(Blue,0xC3) C(BlueMoon,0xC7) C(VividCerulean,0xCB)
 C(JaegerGreen,0xC9) C(KellyGreen,0xD8) C(Limerick,0xE8) C(Red,0xF0) C(CobaltBlue,0xC6)
-C(Celeste,0xEF)
+C(Celeste,0xEF) C(Green,0xCC) C(IslamicGreen,0xC8)
 #undef C
+#define PBL_COLOR 1
+static inline bool gcolor_equal(GColor a, GColor b) { return a.argb == b.argb; }
+#define GColorGreen ((GColor){0xCC})
+#define GColorIslamicGreen ((GColor){0xC8})
+#ifndef GColorRed
+#define GColorRed ((GColor){0xF0})
+#endif
+#ifndef GColorOrange
+#define GColorOrange ((GColor){0xF4})
+#endif
 #define GColorBlack ((GColor){GColorBlackARGB8})
 #define GColorWhite ((GColor){GColorWhiteARGB8})
 #define GColorLightGray ((GColor){GColorLightGrayARGB8})

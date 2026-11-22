@@ -42,6 +42,7 @@ enum { LANG_EN, LANG_DE, LANG_FR, LANG_IT, LANG_ES, LANG_COUNT };
 enum { CLOCK_AUTO, CLOCK_24, CLOCK_12 };
 enum { TEMP_C, TEMP_F };
 enum { RAIN_MM, RAIN_IN };
+enum { BATT_OFF, BATT_PLAIN, BATT_COLOR };
 enum { WIND_KMH, WIND_MPH, WIND_MS, WIND_KT, WIND_BFT };
 
 #define SETTINGS_VERSION 3
@@ -64,7 +65,7 @@ typedef struct {
   uint8_t updates;
   uint8_t interval;   // minutes
   int16_t tilt;       // degrees the face is turned clockwise
-  uint8_t battline;   // thin battery line above the info row
+  uint8_t battline;   // battery line above the info row: BATT_OFF / BATT_PLAIN / BATT_COLOR
   uint8_t stepbar;    // step goal bar below the info row
   uint16_t stepgoal;  // steps, 0 = your usual daily steps
 } Settings;

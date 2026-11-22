@@ -74,11 +74,16 @@ module.exports = [
         ]
       },
       {
-        type: 'toggle',
+        type: 'select',
         messageKey: 'BattLine',
         label: 'Battery line',
         description: 'A thin line just above the middle text that shrinks as the watch battery runs down.',
-        defaultValue: true
+        defaultValue: '1',
+        options: [
+          { label: 'Off', value: '0' },
+          { label: 'Plain (red at 20% or less)', value: '1' },
+          { label: 'Colourful (green, orange below 30%, red below 10%)', value: '2' }
+        ]
       },
       {
         type: 'toggle',
