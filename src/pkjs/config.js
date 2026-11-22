@@ -3,7 +3,7 @@
 module.exports = [
   {
     type: 'heading',
-    defaultValue: 'Contour'
+    defaultValue: 'Drizzle'
   },
   {
     type: 'text',

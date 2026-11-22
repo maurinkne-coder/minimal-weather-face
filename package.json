@@ -7,7 +7,7 @@
   ],
   "private": true,
   "pebble": {
-    "displayName": "Contour",
+    "displayName": "Drizzle",
     "uuid": "ea94434e-5c34-4813-b3d8-c26a8125a27d",
     "sdkVersion": "3",
     "enableMultiJS": true,

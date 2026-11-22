@@ -1,4 +1,4 @@
-# Contour
+# Drizzle
 
 A minimal Pebble watchface: the next hours of rain drawn as a
 blue bar chart around a big, clean stacked clock. Built for Pebble Time 2
