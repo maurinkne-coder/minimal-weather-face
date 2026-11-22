@@ -1,0 +1,5 @@
+build/
+node_modules/
+tools/preview/stub_*
+tools/preview/out*/
+tools/preview/sheet*.png

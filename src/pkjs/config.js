@@ -1,0 +1,236 @@
+// Settings page (Clay). Values are strings for selects/radios, booleans for
+// toggles; index.js turns them into numbers for the watch.
+module.exports = [
+  {
+    type: 'heading',
+    defaultValue: 'Contour'
+  },
+  {
+    type: 'text',
+    defaultValue: 'The next hours of weather as a thin line around the time.'
+  },
+
+  {
+    type: 'section',
+    items: [
+      { type: 'heading', defaultValue: 'Look' },
+      {
+        type: 'radiogroup',
+        messageKey: 'Theme',
+        label: 'Theme',
+        defaultValue: '0',
+        options: [
+          { label: 'Midnight (black, temperature in colour)', value: '0' },
+          { label: 'Daylight (white, easy to read outdoors)', value: '1' },
+          { label: 'Mono (black and white only)', value: '2' },
+          { label: 'Graphite (dark grey, temperature in colour)', value: '3' },
+          { label: 'Automatic (Daylight by day, Midnight at night)', value: '4' }
+        ]
+      },
+      {
+        type: 'select',
+        messageKey: 'Range',
+        label: 'Track length (Pebble Time 2)',
+        description: 'On Round 2 the ring always shows 24 hours.',
+        defaultValue: '24',
+        options: [
+          { label: '12 hours', value: '12' },
+          { label: '24 hours', value: '24' },
+          { label: '48 hours', value: '48' }
+        ]
+      },
+      {
+        type: 'select',
+        messageKey: 'Corner',
+        label: 'Extra line',
+        description: 'Small line under the smart line.',
+        defaultValue: '1',
+        options: [
+          { label: 'Nothing', value: '0' },
+          { label: 'Battery', value: '1' },
+          { label: 'Steps today', value: '2' },
+          { label: 'Heart rate', value: '3' }
+        ]
+      },
+      {
+        type: 'toggle',
+        messageKey: 'Anim',
+        label: 'Animations',
+        description: 'The track draws itself when the face opens; a wrist flick walks through the coming hours. Always off in Quiet Time and below 20% battery.',
+        defaultValue: true
+      }
+    ]
+  },
+
+  {
+    type: 'section',
+    items: [
+      { type: 'heading', defaultValue: 'Smart line' },
+      {
+        type: 'text',
+        defaultValue: 'One line with the most important thing, in this order: rain now or within 2 hours, frost tonight, wind gusts, UV, "dry until", then the next sunset or sunrise.'
+      },
+      { type: 'toggle', messageKey: 'Frost', label: 'Frost tonight', defaultValue: true },
+      {
+        type: 'select',
+        messageKey: 'Gust',
+        label: 'Wind gusts from',
+        defaultValue: '50',
+        options: [
+          { label: 'Off', value: '0' },
+          { label: '40 km/h (25 mph, 22 kn, 6 Bft)', value: '40' },
+          { label: '50 km/h (31 mph, 27 kn, 7 Bft)', value: '50' },
+          { label: '60 km/h (37 mph, 32 kn, 7 Bft)', value: '60' },
+          { label: '70 km/h (43 mph, 38 kn, 8 Bft)', value: '70' },
+          { label: '80 km/h (50 mph, 43 kn, 9 Bft)', value: '80' }
+        ]
+      },
+      {
+        type: 'select',
+        messageKey: 'Uv',
+        label: 'UV index from',
+        defaultValue: '6',
+        options: [
+          { label: 'Off', value: '0' },
+          { label: '3', value: '3' },
+          { label: '4', value: '4' },
+          { label: '5', value: '5' },
+          { label: '6', value: '6' },
+          { label: '7', value: '7' },
+          { label: '8', value: '8' },
+          { label: '9', value: '9' },
+          { label: '10', value: '10' },
+          { label: '11', value: '11' }
+        ]
+      },
+      { type: 'toggle', messageKey: 'SunLine', label: 'Sunset and sunrise', defaultValue: true }
+    ]
+  },
+
+  {
+    type: 'section',
+    items: [
+      { type: 'heading', defaultValue: 'Language and units' },
+      {
+        type: 'select',
+        messageKey: 'Lang',
+        label: 'Language',
+        defaultValue: '0',
+        options: [
+          { label: 'English', value: '0' },
+          { label: 'Deutsch', value: '1' },
+          { label: 'Français', value: '2' },
+          { label: 'Italiano', value: '3' },
+          { label: 'Español', value: '4' }
+        ]
+      },
+      {
+        type: 'select',
+        messageKey: 'Clock',
+        label: 'Clock',
+        defaultValue: '0',
+        options: [
+          { label: 'Automatic (watch setting)', value: '0' },
+          { label: '24 hour', value: '1' },
+          { label: '12 hour', value: '2' }
+        ]
+      },
+      {
+        type: 'select',
+        messageKey: 'TempUnit',
+        label: 'Temperature',
+        defaultValue: '0',
+        options: [
+          { label: '°C', value: '0' },
+          { label: '°F', value: '1' }
+        ]
+      },
+      {
+        type: 'select',
+        messageKey: 'RainUnit',
+        label: 'Rain',
+        defaultValue: '0',
+        options: [
+          { label: 'mm', value: '0' },
+          { label: 'inch', value: '1' }
+        ]
+      },
+      {
+        type: 'select',
+        messageKey: 'WindUnit',
+        label: 'Wind speed',
+        defaultValue: '0',
+        options: [
+          { label: 'km/h', value: '0' },
+          { label: 'mph', value: '1' },
+          { label: 'm/s', value: '2' },
+          { label: 'knots', value: '3' },
+          { label: 'Beaufort', value: '4' }
+        ]
+      }
+    ]
+  },
+
+  {
+    type: 'section',
+    items: [
+      { type: 'heading', defaultValue: 'Weather' },
+      {
+        type: 'toggle',
+        messageKey: 'Updates',
+        label: 'Weather updates',
+        description: 'From Open-Meteo, no account needed. The watch keeps 3 days, so the track keeps moving when your phone is away. No updates below 20% battery.',
+        defaultValue: true
+      },
+      {
+        type: 'select',
+        messageKey: 'Interval',
+        label: 'Update every',
+        defaultValue: '30',
+        options: [
+          { label: '15 minutes', value: '15' },
+          { label: '30 minutes', value: '30' },
+          { label: '60 minutes', value: '60' }
+        ]
+      },
+      {
+        type: 'select',
+        messageKey: 'Model',
+        label: 'Weather model',
+        defaultValue: 'best_match',
+        options: [
+          { label: 'Best match (Open-Meteo picks)', value: 'best_match' },
+          { label: 'MeteoSwiss ICON CH', value: 'meteoswiss_icon_ch2' },
+          { label: 'DWD ICON', value: 'icon_seamless' },
+          { label: 'ECMWF', value: 'ecmwf_ifs025' },
+          { label: 'Météo-France', value: 'meteofrance_seamless' },
+          { label: 'UK Met Office', value: 'ukmo_seamless' },
+          { label: 'NOAA GFS', value: 'gfs_seamless' }
+        ]
+      },
+      {
+        type: 'radiogroup',
+        messageKey: 'LocMode',
+        label: 'Location',
+        defaultValue: 'gps',
+        options: [
+          { label: 'GPS (phone location)', value: 'gps' },
+          { label: 'City below', value: 'city' }
+        ]
+      },
+      {
+        type: 'input',
+        messageKey: 'City',
+        label: 'City',
+        defaultValue: '',
+        attributes: { placeholder: 'e.g. Zürich' }
+      },
+      {
+        type: 'text',
+        defaultValue: 'Your location is only used to ask Open-Meteo for the forecast.'
+      }
+    ]
+  },
+
+  { type: 'submit', defaultValue: 'Save' }
+];
