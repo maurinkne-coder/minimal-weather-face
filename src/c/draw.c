@@ -134,8 +134,41 @@ static int32_t tilt_frac(GRect b, int deg) {
 // Colour
 // ---------------------------------------------------------------------------
 
+// Any of the 64 Pebble colours from its 0b11RRGGBB code.
+static GColor argb(uint8_t v) {
+  GColor c;
+  c.argb = v;
+  return c;
+}
+
+// Step line colours to pick from in the settings (index 0 = theme colour).
+static const uint8_t STEP_COLORS[] = {
+  0,
+  0xF8,  // 1 yellow
+  0xF4,  // 2 orange
+  0xF0,  // 3 red
+  0xF6,  // 4 pink
+  0xE7,  // 5 violet
+  0xDD,  // 6 green
+  0xEE,  // 7 mint
+  0xFF,  // 8 white
+};
+
 static Theme theme_for(int id) {
   switch (id) {
+    // bg, text, dim, accent, rain base, light, medium, heavy, steps
+    case THEME_OCEAN:
+      return (Theme){ argb(0xC1), argb(0xFF), argb(0xD6), argb(0xEF),
+                      argb(0xC7), argb(0xCB), argb(0xDF), argb(0xFF), argb(0xF9) };
+    case THEME_FOREST:
+      return (Theme){ argb(0xC4), argb(0xFF), argb(0xD9), argb(0xEE),
+                      argb(0xC6), argb(0xDB), argb(0xDF), argb(0xFF), argb(0xF8) };
+    case THEME_EMBER:
+      return (Theme){ argb(0xC0), argb(0xFF), argb(0xD5), argb(0xF9),
+                      argb(0xC6), argb(0xC6), argb(0xDB), argb(0xDF), argb(0xF4) };
+    case THEME_SAND:
+      return (Theme){ argb(0xFE), argb(0xC0), argb(0xE4), argb(0xC6),
+                      argb(0xEA), argb(0xDB), argb(0xC3), argb(0xC1), argb(0xF4) };
     case THEME_DAYLIGHT:
       return (Theme){ GColorWhite, GColorBlack, GColorDarkGray, GColorCobaltBlue,
                       GColorLightGray, GColorPictonBlue, GColorBlue, GColorOxfordBlue, GColorOrange };
@@ -161,7 +194,11 @@ static bool is_daytime(time_t now) {
 static Theme current_theme(time_t now) {
   int id = g_set.theme;
   if (id == THEME_AUTO) id = is_daytime(now) ? THEME_DAYLIGHT : THEME_MIDNIGHT;
-  return theme_for(id);
+  Theme th = theme_for(id);
+  if (g_set.stepcolor && g_set.stepcolor < sizeof(STEP_COLORS) && id != THEME_MONO) {
+    th.steps = argb(STEP_COLORS[g_set.stepcolor]);
+  }
+  return th;
 }
 
 // ---------------------------------------------------------------------------
@@ -372,7 +409,9 @@ void draw_face(Layer *layer, GContext *ctx) {
     graphics_fill_rect(ctx, r, 0, GCornerNone);
     GColor c = th.fg;
 #ifdef PBL_COLOR
-    bool light_bg = gcolor_equal(th.bg, GColorWhite);
+    // Light backgrounds (Daylight, Sand) get the darker green.
+    uint8_t b = th.bg.argb;
+    bool light_bg = ((b >> 4) & 3) + ((b >> 2) & 3) + (b & 3) >= 7;
     if (g_set.battline == BATT_COLOR && g_set.theme != THEME_MONO) {
       // Colourful: green above 30%, orange down to 10%, red below 10%.
       if (pct > 30) c = light_bg ? GColorIslamicGreen : GColorGreen;

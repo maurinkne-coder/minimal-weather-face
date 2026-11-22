@@ -40,6 +40,7 @@ fonts, so the lettering differs a little from the watch._
   sits below.
 - **Wrist flick**: a cursor walks along the line, and the middle shows the
   time, temperature and rain for each hour.
+- **Colour palettes**: Midnight, Daylight, Mono, Graphite, Ocean, Forest, Ember, Sand, or Automatic. The step line colour can be picked separately.
 - **Tilt**: the whole face can be turned (15° steps up to 90° either way, or
   upside down) for wearing the watch on the inside of the wrist or reading it
   at an angle. The line follows the screen edge and starts where "up" now is.

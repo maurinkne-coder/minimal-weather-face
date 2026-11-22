@@ -40,7 +40,8 @@ enum { WX_OK = 0, WX_NO_LOCATION = 1, WX_NO_NETWORK = 2 };
 
 // ---- Settings ----
 
-enum { THEME_MIDNIGHT, THEME_DAYLIGHT, THEME_MONO, THEME_GRAPHITE, THEME_AUTO };
+enum { THEME_MIDNIGHT, THEME_DAYLIGHT, THEME_MONO, THEME_GRAPHITE, THEME_AUTO,
+       THEME_OCEAN, THEME_FOREST, THEME_EMBER, THEME_SAND, THEME_COUNT };
 enum { CORNER_NONE, CORNER_BATTERY, CORNER_STEPS, CORNER_HEART, CORNER_TEMP };
 enum { LANG_EN, LANG_DE, LANG_FR, LANG_IT, LANG_ES, LANG_COUNT };
 enum { CLOCK_AUTO, CLOCK_24, CLOCK_12 };
@@ -49,7 +50,7 @@ enum { RAIN_MM, RAIN_IN };
 enum { BATT_OFF, BATT_PLAIN, BATT_COLOR };
 enum { WIND_KMH, WIND_MPH, WIND_MS, WIND_KT, WIND_BFT };
 
-#define SETTINGS_VERSION 3
+#define SETTINGS_VERSION 4
 
 typedef struct {
   uint8_t version;
@@ -72,6 +73,7 @@ typedef struct {
   uint8_t battline;   // battery line above the info row: BATT_OFF / BATT_PLAIN / BATT_COLOR
   uint8_t stepbar;    // step goal bar below the info row
   uint16_t stepgoal;  // steps, 0 = your usual daily steps
+  uint8_t stepcolor;  // 0 = theme colour, else an entry of STEP_COLORS in draw.c
 } Settings;
 
 // ---- Things the face shows that come from the watch itself ----

@@ -43,6 +43,7 @@ static void settings_default(void) {
     .battline = 1,
     .stepbar = 1,
     .stepgoal = 10000,
+    .stepcolor = 0,
   };
 }
 
@@ -228,6 +229,8 @@ static bool read_settings(DictionaryIterator *it) {
   s.battline = read_int(it, MESSAGE_KEY_BattLine, s.battline);
   s.stepbar = read_int(it, MESSAGE_KEY_StepBar, s.stepbar);
   s.stepgoal = read_int(it, MESSAGE_KEY_StepGoal, s.stepgoal);
+  s.stepcolor = read_int(it, MESSAGE_KEY_StepColor, s.stepcolor);
+  if (s.theme >= THEME_COUNT) s.theme = THEME_MIDNIGHT;
   if (s.tilt <= -360 || s.tilt >= 360) s.tilt = 0;
   if (s.lang >= LANG_COUNT) s.lang = LANG_EN;
   g_set = s;

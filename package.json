@@ -46,6 +46,7 @@
       "BattLine",
       "StepBar",
       "StepGoal",
+      "StepColor",
       "Model",
       "LocMode",
       "City",

@@ -11,12 +11,12 @@ var DEFAULTS = {
   Theme: '0', Range: '24', Corner: '4', Anim: true,
   Frost: true, Gust: '50', Uv: '6', SunLine: true,
   Lang: '0', Clock: '0', TempUnit: '0', RainUnit: '0', WindUnit: '0',
-  Updates: true, Interval: '30', Tilt: '0', BattLine: '1', StepBar: true, StepGoal: '10000', Model: 'best_match', LocMode: 'gps', City: ''
+  Updates: true, Interval: '30', Tilt: '0', BattLine: '1', StepBar: true, StepGoal: '10000', StepColor: '0', Model: 'best_match', LocMode: 'gps', City: ''
 };
 
 var WATCH_KEYS = ['Theme', 'Range', 'Corner', 'Anim', 'Frost', 'Gust', 'Uv', 'SunLine',
                   'Lang', 'Clock', 'TempUnit', 'RainUnit', 'WindUnit', 'Updates', 'Interval', 'Tilt',
-                  'BattLine', 'StepBar', 'StepGoal'];
+                  'BattLine', 'StepBar', 'StepGoal', 'StepColor'];
 
 // ---------------------------------------------------------------------------
 // Settings

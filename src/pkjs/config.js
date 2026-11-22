@@ -24,28 +24,11 @@ module.exports = [
           { label: 'Daylight (white, easy to read outdoors)', value: '1' },
           { label: 'Mono (black and white only)', value: '2' },
           { label: 'Graphite (dark grey)', value: '3' },
+          { label: 'Ocean (deep blue)', value: '5' },
+          { label: 'Forest (dark green)', value: '6' },
+          { label: 'Ember (black with warm orange text)', value: '7' },
+          { label: 'Sand (warm light, easy to read outdoors)', value: '8' },
           { label: 'Automatic (Daylight by day, Midnight at night)', value: '4' }
-        ]
-      },
-      {
-        type: 'select',
-        messageKey: 'Tilt',
-        label: 'Tilt',
-        description: 'Turns the whole face, for example if you wear the watch on the inside of your wrist or look at it from an angle while cycling.',
-        defaultValue: '0',
-        options: [
-          { label: 'Upright', value: '0' },
-          { label: '15° clockwise', value: '15' },
-          { label: '30° clockwise', value: '30' },
-          { label: '45° clockwise', value: '45' },
-          { label: '60° clockwise', value: '60' },
-          { label: '90° clockwise', value: '90' },
-          { label: '15° anticlockwise', value: '-15' },
-          { label: '30° anticlockwise', value: '-30' },
-          { label: '45° anticlockwise', value: '-45' },
-          { label: '60° anticlockwise', value: '-60' },
-          { label: '90° anticlockwise', value: '-90' },
-          { label: 'Upside down', value: '180' }
         ]
       },
       {
@@ -74,6 +57,48 @@ module.exports = [
           { label: 'Heart rate', value: '3' }
         ]
       },
+      {
+        type: 'toggle',
+        messageKey: 'Anim',
+        label: 'Animations',
+        description: 'The chart draws itself when the face opens; a wrist flick walks through the coming hours. Always off in Quiet Time and below 20% battery.',
+        defaultValue: true
+      }
+    ]
+  },
+
+  {
+    type: 'section',
+    items: [
+      { type: 'heading', defaultValue: 'Tilt' },
+      {
+        type: 'select',
+        messageKey: 'Tilt',
+        label: 'Tilt',
+        description: 'Turns the whole face, for example if you wear the watch on the inside of your wrist or look at it from an angle while cycling.',
+        defaultValue: '0',
+        options: [
+          { label: 'Upright', value: '0' },
+          { label: '15° clockwise', value: '15' },
+          { label: '30° clockwise', value: '30' },
+          { label: '45° clockwise', value: '45' },
+          { label: '60° clockwise', value: '60' },
+          { label: '90° clockwise', value: '90' },
+          { label: '15° anticlockwise', value: '-15' },
+          { label: '30° anticlockwise', value: '-30' },
+          { label: '45° anticlockwise', value: '-45' },
+          { label: '60° anticlockwise', value: '-60' },
+          { label: '90° anticlockwise', value: '-90' },
+          { label: 'Upside down', value: '180' }
+        ]
+      }
+    ]
+  },
+
+  {
+    type: 'section',
+    items: [
+      { type: 'heading', defaultValue: 'Battery and steps' },
       {
         type: 'select',
         messageKey: 'BattLine',
@@ -108,11 +133,22 @@ module.exports = [
         ]
       },
       {
-        type: 'toggle',
-        messageKey: 'Anim',
-        label: 'Animations',
-        description: 'The chart draws itself when the face opens; a wrist flick walks through the coming hours. Always off in Quiet Time and below 20% battery.',
-        defaultValue: true
+        type: 'select',
+        messageKey: 'StepColor',
+        label: 'Step line colour',
+        description: 'Never blue, so it can\'t be mistaken for rain.',
+        defaultValue: '0',
+        options: [
+          { label: 'Theme colour', value: '0' },
+          { label: 'Yellow', value: '1' },
+          { label: 'Orange', value: '2' },
+          { label: 'Red', value: '3' },
+          { label: 'Pink', value: '4' },
+          { label: 'Violet', value: '5' },
+          { label: 'Green', value: '6' },
+          { label: 'Mint', value: '7' },
+          { label: 'White', value: '8' }
+        ]
       }
     ]
   },
