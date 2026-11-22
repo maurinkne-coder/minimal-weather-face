@@ -103,7 +103,7 @@ void gpath_draw_outline(GContext *c, GPath *p) {
 }
 
 // The big digits are images on the watch; here they are logged and drawn by render.py.
-void digits_draw(GContext *c, const char *s, int cx, int top, int gap, GColor color) {
-  (void)c;
+void digits_draw(GContext *c, const char *s, int cx, int top, int gap, GColor color, GColor bg) {
+  (void)c; (void)bg;
   printf("[\"digits\","); jstr(s); printf(",%d,%d,%d,%d]\n", cx, top, gap, color.argb);
 }

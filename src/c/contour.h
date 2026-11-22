@@ -120,7 +120,7 @@ void fmt_rain_short(char *buf, size_t n, int tenths_mm);
 void digits_load(void);
 void digits_unload(void);
 // Draws `s` (digits only) centred on cx with its top at `top`, `gap` px apart.
-void digits_draw(GContext *ctx, const char *s, int cx, int top, int gap, GColor color);
+void digits_draw(GContext *ctx, const char *s, int cx, int top, int gap, GColor color, GColor bg);
 
 // draw.c
 void draw_face(Layer *layer, GContext *ctx);

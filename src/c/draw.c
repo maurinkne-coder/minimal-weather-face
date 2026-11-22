@@ -375,8 +375,8 @@ void draw_face(Layer *layer, GContext *ctx) {
   upper_utf8(corner);
   draw_text_font(ctx, date, g_small_font,
                  GRect(cx - 70, hh_top - SMALL_GAP - SMALL_CAP - SMALL_PAD, 140, 18), th.dim);
-  digits_draw(ctx, hh, cx, hh_top, GAP, th.fg);
-  digits_draw(ctx, mm, cx, mm_top, GAP, th.fg);
+  digits_draw(ctx, hh, cx, hh_top, GAP, th.fg, th.bg);
+  digits_draw(ctx, mm, cx, mm_top, GAP, th.fg, th.bg);
   const int corner_y = mm_top + CAP + SMALL_GAP - SMALL_PAD;
   if (g_set.corner == CORNER_TEMP) {
     // Today's low, now and high: the current temperature bright in the middle.
@@ -445,9 +445,9 @@ void draw_face(Layer *layer, GContext *ctx) {
   // accent colour. Both use the same font so they share one baseline.
   {
     GFont f = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
-    // Lines sit at cy-13 and cy+11 (2 px from the digits each). The text
-    // ink (cap tops to descenders) is centred in the 22 px between them.
-    int top = cy - 14;
+    // Lines sit at cy-13 and cy+11 (2 px from the digits each). The capital
+    // letters and digits of the text are centred in the 22 px between them.
+    int top = cy - 12;
     GRect wide = GRect(0, 0, 400, 24);
     int wl = graphics_text_layout_get_content_size(left, f, wide, GTextOverflowModeTrailingEllipsis,
                                                    GTextAlignmentLeft).w;
@@ -457,7 +457,7 @@ void draw_face(Layer *layer, GContext *ctx) {
     if (wl + 5 + wr > MAX_W && right[0]) {
       // Too long: drop both to the smaller font before cutting anything off.
       f = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
-      top = cy - 10;
+      top = cy - 8;
       wl = graphics_text_layout_get_content_size(left, f, wide, GTextOverflowModeTrailingEllipsis,
                                                  GTextAlignmentLeft).w;
       wr = graphics_text_layout_get_content_size(right, f, wide, GTextOverflowModeTrailingEllipsis,

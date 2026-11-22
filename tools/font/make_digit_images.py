@@ -1,9 +1,10 @@
-"""Renders the clock digits 0-9 as 1-bit images for the watch.
+"""Renders the clock digits 0-9 as 4-level (anti-aliased) images for the watch.
 
 Pebble fonts can't hold glyphs this large (the SDK stops at about 88 px), so the
 big clock is drawn from images instead. Each image is cropped to the digit's
 ink, all with the same height (the digit height), with a transparent
-background and one ink colour that the watch swaps for the theme colour.
+background, two edge shades and one ink colour; the watch swaps them for
+the theme colours.
 
     python3 tools/font/make_digit_images.py
 
@@ -15,6 +16,7 @@ from PIL import Image, ImageDraw, ImageFont
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..", "..")
 FONT = os.path.join(ROOT, "resources", "fonts", "ContourDigits-Black.ttf")
+SS = 4  # supersampling for the edges
 SIZES = {"gabbro": 103, "emery": 108}  # px, as large as each screen allows
 
 for platform, size in SIZES.items():
@@ -28,14 +30,21 @@ for platform, size in SIZES.items():
     for d in "0123456789":
         x0, _, x1, _ = font.getbbox(d)
         w, h = x1 - x0, bottom - top
-        img = Image.new("L", (w, h), 0)
-        ImageDraw.Draw(img).text((-x0, -top), d, font=font, fill=255)
-        bw = img.point(lambda v: 1 if v >= 128 else 0)
+        # Drawn 4x larger and scaled down, so the edge pixels get a true
+        # coverage value; that is then cut to 4 levels for the watch.
+        big = Image.new("L", (w * SS, h * SS), 0)
+        bigfont = ImageFont.truetype(FONT, size * SS)
+        bx0 = bigfont.getbbox(d)[0]
+        btop = min(bigfont.getbbox(c)[1] for c in "0123456789")
+        ImageDraw.Draw(big).text((-bx0, -btop), d, font=bigfont, fill=255)
+        img = big.resize((w, h), Image.BOX)
+        lv = img.point(lambda v: min(3, (v * 3 + 127) // 255))
         pal = Image.new("P", (w, h), 0)
-        pal.putpalette([0, 0, 0, 255, 255, 255] + [0, 0, 0] * 254)
-        pal.paste(bw, (0, 0))
-        pal.info["transparency"] = 0          # index 0 is see-through
-        pal.save(os.path.join(out, d + ".png"), transparency=0, bits=1, optimize=True)
+        # 0 see-through, 1 and 2 edge shades, 3 full ink. The watch swaps the
+        # shades for mixes of the clock and background colours.
+        pal.putpalette([0, 0, 0, 85, 85, 85, 170, 170, 170, 255, 255, 255] + [0, 0, 0] * 252)
+        pal.paste(lv, (0, 0))
+        pal.save(os.path.join(out, d + ".png"), transparency=0, bits=2, optimize=False)
         lines.append("%d %d" % (w, h))
     with open(os.path.join(out, "sizes.txt"), "w") as f:
         f.write("\n".join(lines) + "\n")

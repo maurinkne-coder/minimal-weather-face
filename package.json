@@ -86,7 +86,7 @@
           "type": "bitmap",
           "name": "DIGIT_0",
           "file": "images/digits/gabbro/0.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "gabbro"
@@ -96,7 +96,7 @@
           "type": "bitmap",
           "name": "DIGIT_1",
           "file": "images/digits/gabbro/1.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "gabbro"
@@ -106,7 +106,7 @@
           "type": "bitmap",
           "name": "DIGIT_2",
           "file": "images/digits/gabbro/2.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "gabbro"
@@ -116,7 +116,7 @@
           "type": "bitmap",
           "name": "DIGIT_3",
           "file": "images/digits/gabbro/3.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "gabbro"
@@ -126,7 +126,7 @@
           "type": "bitmap",
           "name": "DIGIT_4",
           "file": "images/digits/gabbro/4.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "gabbro"
@@ -136,7 +136,7 @@
           "type": "bitmap",
           "name": "DIGIT_5",
           "file": "images/digits/gabbro/5.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "gabbro"
@@ -146,7 +146,7 @@
           "type": "bitmap",
           "name": "DIGIT_6",
           "file": "images/digits/gabbro/6.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "gabbro"
@@ -156,7 +156,7 @@
           "type": "bitmap",
           "name": "DIGIT_7",
           "file": "images/digits/gabbro/7.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "gabbro"
@@ -166,7 +166,7 @@
           "type": "bitmap",
           "name": "DIGIT_8",
           "file": "images/digits/gabbro/8.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "gabbro"
@@ -176,7 +176,7 @@
           "type": "bitmap",
           "name": "DIGIT_9",
           "file": "images/digits/gabbro/9.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "gabbro"
@@ -186,7 +186,7 @@
           "type": "bitmap",
           "name": "DIGIT_0",
           "file": "images/digits/emery/0.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "emery"
@@ -196,7 +196,7 @@
           "type": "bitmap",
           "name": "DIGIT_1",
           "file": "images/digits/emery/1.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "emery"
@@ -206,7 +206,7 @@
           "type": "bitmap",
           "name": "DIGIT_2",
           "file": "images/digits/emery/2.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "emery"
@@ -216,7 +216,7 @@
           "type": "bitmap",
           "name": "DIGIT_3",
           "file": "images/digits/emery/3.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "emery"
@@ -226,7 +226,7 @@
           "type": "bitmap",
           "name": "DIGIT_4",
           "file": "images/digits/emery/4.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "emery"
@@ -236,7 +236,7 @@
           "type": "bitmap",
           "name": "DIGIT_5",
           "file": "images/digits/emery/5.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "emery"
@@ -246,7 +246,7 @@
           "type": "bitmap",
           "name": "DIGIT_6",
           "file": "images/digits/emery/6.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "emery"
@@ -256,7 +256,7 @@
           "type": "bitmap",
           "name": "DIGIT_7",
           "file": "images/digits/emery/7.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "emery"
@@ -266,7 +266,7 @@
           "type": "bitmap",
           "name": "DIGIT_8",
           "file": "images/digits/emery/8.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "emery"
@@ -276,7 +276,7 @@
           "type": "bitmap",
           "name": "DIGIT_9",
           "file": "images/digits/emery/9.png",
-          "memoryFormat": "1BitPalette",
+          "memoryFormat": "2BitPalette",
           "spaceOptimization": "memory",
           "targetPlatforms": [
             "emery"

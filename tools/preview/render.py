@@ -96,8 +96,11 @@ def render(log, w, h, round_, out):
             ims = [Image.open(os.path.join(HERE, "../../resources/images/digits", plat, ch + ".png")).convert("L") for ch in s]
             total = sum(i.width for i in ims) + gap * (len(ims) - 1)
             x = cx - total // 2
-            for im in ims:
-                mask = im.point(lambda v: 255 if v else 0).resize((im.width * S, im.height * S), Image.NEAREST)
+            for ch, im in zip(s, ims):
+                # Palette indices 0-3 are ink levels (see-through, two edge shades, full).
+                idx = Image.open(os.path.join(HERE, "../../resources/images/digits", plat, ch + ".png"))
+                mask = idx.convert("L")  # palette greys 0/85/170/255 = levels
+                mask = mask.resize((im.width * S, im.height * S), Image.NEAREST)
                 img.paste(Image.new("RGB", mask.size, col(a)), (x * S, top * S), mask)
                 x += im.width + gap
             d = ImageDraw.Draw(img)
