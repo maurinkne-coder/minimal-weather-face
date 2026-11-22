@@ -58,6 +58,14 @@ def render(log, w, h, round_, out):
         if k == "rect":
             _, x, y, rw, rh, a = c
             d.rectangle([x * S, y * S, (x + rw) * S, (y + rh) * S], fill=col(a))
+        elif k == "px":
+            # A symbol pixel mixed over what is there, k/16 coverage, in
+            # 2-bit steps per channel like the watch.
+            _, x, y, a, cov = c
+            under = img.getpixel((x * S + S // 2, y * S + S // 2))
+            over = col(a)
+            mixed = tuple(round(((u // 85) * (16 - cov) + (o // 85) * cov) / 16) * 85 for u, o in zip(under, over))
+            d.rectangle([x * S, y * S, x * S + S - 1, y * S + S - 1], fill=mixed)
         elif k == "circle":
             _, x, y, r, a = c
             d.ellipse([(x - r) * S, (y - r) * S, (x + r) * S, (y + r) * S], fill=col(a))

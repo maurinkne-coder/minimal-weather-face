@@ -403,14 +403,14 @@ static void draw_symbol(GContext *ctx, const Theme *th, int kind, GPoint c, time
   GColor alarm = mono ? th->fg : GColorRed;
   switch (kind) {
     case SYM_WEATHER: {
-      IconColors k = { .cloud = th->fg, .sun = warm, .water = water, .bg = th->bg };
+      IconColors k = { .cloud = th->fg, .sun = warm, .water = water };
       uint8_t code = fresh ? g_wx.cur_code : g_wx.code[wi];
       icon_weather(ctx, c, code, is_daytime(now), &k);
       break;
     }
-    case SYM_RAIN: icon_drop(ctx, c, rain_chance(wi), water, th->bg); break;
-    case SYM_PHONE: icon_phone_off(ctx, c, th->fg, alarm, th->bg); break;
-    case SYM_QUIET: icon_quiet(ctx, c, th->fg, th->bg); break;
+    case SYM_RAIN: icon_drop(ctx, c, rain_chance(wi), water); break;
+    case SYM_PHONE: icon_phone_off(ctx, c, th->fg, alarm); break;
+    case SYM_QUIET: icon_quiet(ctx, c, th->fg); break;
     case SYM_WIND: {
       bool gusty = g_set.gust && g_wx.gust[wi] >= g_set.gust;
       // The forecast gives where the wind comes from; the arrow shows where it goes.

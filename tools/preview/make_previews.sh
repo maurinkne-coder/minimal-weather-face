@@ -3,8 +3,8 @@
 # Needs gcc and Python with Pillow. Run from the repository root.
 set -e
 cd "$(dirname "$0")"
-gcc -std=gnu99 -Wall -Wextra -Werror -Wno-unused-parameter -I. -o stub_rect stub.c ../../src/c/draw.c ../../src/c/text.c ../../src/c/weather.c ../../src/c/icons.c -lm
-gcc -std=gnu99 -Wall -Wextra -Werror -Wno-unused-parameter -DPBL_ROUND -I. -o stub_round stub.c ../../src/c/draw.c ../../src/c/text.c ../../src/c/weather.c ../../src/c/icons.c -lm
+gcc -std=gnu99 -Wall -Wextra -Werror -Wno-unused-parameter -DHOST_PREVIEW -I. -o stub_rect stub.c ../../src/c/draw.c ../../src/c/text.c ../../src/c/weather.c ../../src/c/icons.c -lm
+gcc -std=gnu99 -Wall -Wextra -Werror -Wno-unused-parameter -DHOST_PREVIEW -DPBL_ROUND -I. -o stub_round stub.c ../../src/c/draw.c ../../src/c/text.c ../../src/c/weather.c ../../src/c/icons.c -lm
 # args: theme lang scenario range corner scrub hhmm tilt
 ./stub_round 260 260 0 0 0 24 4 -1 0800 0  | python3 render.py 260 260 1 ../../docs/round-midnight.png
 ./stub_round 260 260 1 1 1 24 2 -1 2030 0  | python3 render.py 260 260 1 ../../docs/round-daylight.png

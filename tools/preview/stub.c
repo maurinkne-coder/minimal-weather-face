@@ -14,6 +14,7 @@ GRect grect_inset(GRect r, GEdgeInsets i) { return GRect(r.origin.x + i.left, r.
 GRect layer_get_bounds(Layer *l) { (void)l; return GRect(0, 0, W, H); }
 GFont fonts_get_system_font(const char *k) { return k; }
 bool clock_is_24h_style(void) { return true; }
+void host_px(int x, int y, uint8_t argb, int k) { printf("[\"px\",%d,%d,%d,%d]\n", x, y, argb, k); }
 bool quiet_time_is_active(void) { return getenv("QUIET") != NULL; }
 bool connection_service_peek_pebble_app_connection(void) { return getenv("NOPHONE") == NULL; }
 void graphics_context_set_fill_color(GContext *c, GColor col) { c->fill = col; }
@@ -48,6 +49,7 @@ static void fake(time_t now, int scenario) {
     if (i == 7 && scenario != 1) g_wx.precip[i] = 254;  // extreme
     if (i >= 20 && i <= 22) { g_wx.precip[i] = 3; g_wx.prob[i] = 35; g_wx.code[i] = 51; }
   }
+  if (getenv("PROB0")) g_wx.prob[0] = (uint8_t)atoi(getenv("PROB0"));
   g_wx.m15_t0 = (uint32_t)(now - now % 1800); g_wx.m15_count = 8;
   if (scenario == 0) g_wx.m15[3] = 2;
   for (int d = 0; d < 4; d++) {

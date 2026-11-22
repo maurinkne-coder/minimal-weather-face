@@ -136,12 +136,12 @@ void digits_draw(GContext *ctx, const char *s, int cx, int top, int gap, GColor 
 void draw_face(Layer *layer, GContext *ctx);
 
 // icons.c: small weather symbol for a WMO code round `c`, and the charging bolt.
-typedef struct { GColor cloud, sun, water, bg; } IconColors;
+typedef struct { GColor cloud, sun, water; } IconColors;
 void icon_weather(GContext *ctx, GPoint c, uint8_t code, bool day, const IconColors *k);
 void icon_bolt(GContext *ctx, GPoint c, GColor col);
-void icon_drop(GContext *ctx, GPoint c, int level, GColor water, GColor bg);
-void icon_phone_off(GContext *ctx, GPoint c, GColor col, GColor slash, GColor bg);
-void icon_quiet(GContext *ctx, GPoint c, GColor col, GColor bg);
+void icon_drop(GContext *ctx, GPoint c, int level, GColor water);
+void icon_phone_off(GContext *ctx, GPoint c, GColor col, GColor slash);
+void icon_quiet(GContext *ctx, GPoint c, GColor col);
 void icon_arrow(GContext *ctx, GPoint c, int deg, GColor col);
 void icon_moon_phase(GContext *ctx, GPoint c, int phase, GColor lit, GColor dark);
 void icon_heart(GContext *ctx, GPoint c, bool filled, GColor col);
