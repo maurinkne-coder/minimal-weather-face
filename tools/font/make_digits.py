@@ -186,3 +186,25 @@ for name in ["zero", "one", "two", "three", "four", "five", "six", "seven", "nin
         pen.closePath()
     glyf[name] = pen.glyph()
 f.save(dst)
+
+# The degree sign is redrawn on the pixel grid of the 12 px small font: a
+# clean 4 x 4 pixel ring with cut corners (Orbitron's heavy ring turns into a
+# blob at that size). One pixel is 1000 / 12 font units; the ring's top lines
+# up with the top of the digits.
+f = TTFont(dst)
+PX = 1000 / 12
+def px_rect(pen, x0, y0, x1, y1):
+    pts = [(x0, y0), (x0, y1), (x1, y1), (x1, y0)]  # clockwise
+    pen.moveTo(tuple(round(v * PX) for v in pts[0]))
+    for p in pts[1:]:
+        pen.lineTo(tuple(round(v * PX) for v in p))
+    pen.closePath()
+pen = TTGlyphPen(None)
+px_rect(pen, 2, 8, 4, 9)   # top
+px_rect(pen, 2, 5, 4, 6)   # bottom
+px_rect(pen, 1, 6, 2, 8)   # left
+px_rect(pen, 4, 6, 5, 8)   # right
+deg = f.getBestCmap()[0xB0]
+f["glyf"][deg] = pen.glyph()
+f["hmtx"][deg] = (round(6 * PX), round(1 * PX))
+f.save(dst)

@@ -11,6 +11,7 @@ FONTS = {  # key: (file, px size, horizontal squeeze, y offset)
     "gothic18": ("LiberationSans-Regular.ttf", 16, 0.86, 4),
     "gothic18b": ("LiberationSans-Bold.ttf", 16, 0.84, 4),
     "gothic24b": ("LiberationSans-Bold.ttf", 21, 0.84, 5),
+    "gothic28b": ("LiberationSans-Bold.ttf", 25, 0.84, 6),
     "bitham42l": ("LiberationSans-Regular.ttf", 40, 0.92, 8),
 }
 
@@ -57,6 +58,14 @@ def render(log, w, h, round_, out):
         if k == "rect":
             _, x, y, rw, rh, a = c
             d.rectangle([x * S, y * S, (x + rw) * S, (y + rh) * S], fill=col(a))
+        elif k == "px":
+            # A symbol pixel mixed over what is there, k/16 coverage, in
+            # 2-bit steps per channel like the watch.
+            _, x, y, a, cov = c
+            under = img.getpixel((x * S + S // 2, y * S + S // 2))
+            over = col(a)
+            mixed = tuple(round(((u // 85) * (16 - cov) + (o // 85) * cov) / 16) * 85 for u, o in zip(under, over))
+            d.rectangle([x * S, y * S, x * S + S - 1, y * S + S - 1], fill=mixed)
         elif k == "circle":
             _, x, y, r, a = c
             d.ellipse([(x - r) * S, (y - r) * S, (x + r) * S, (y + r) * S], fill=col(a))
@@ -86,9 +95,23 @@ def render(log, w, h, round_, out):
             _, a, pts = c
             q = [(pts[i] * S, pts[i + 1] * S) for i in range(0, len(pts), 2)]
             d.line(q + [q[0]], fill=col(a), width=S)
-        elif k == "rotate":
-            _, deg, a = c
-            img = img.rotate(-deg, resample=Image.NEAREST, center=(w * S / 2, h * S / 2), fillcolor=col(a))
+        elif k == "tilt_begin":
+            # Set the text layer aside (background see-through) and clear.
+            _, a = c
+            bgc = col(a)
+            layer = img.convert("RGBA")
+            px = layer.load()
+            for yy in range(layer.height):
+                for xx in range(layer.width):
+                    if px[xx, yy][:3] == bgc:
+                        px[xx, yy] = (0, 0, 0, 0)
+            img = Image.new("RGB", img.size, bgc)
+            d = ImageDraw.Draw(img)
+        elif k == "tilt_end":
+            # Lay the text back on top, turned, with bilinear smoothing.
+            _, deg = c
+            turned = layer.rotate(-deg, resample=Image.BILINEAR, center=(w * S / 2, h * S / 2))
+            img = Image.alpha_composite(img.convert("RGBA"), turned).convert("RGB")
             d = ImageDraw.Draw(img)
         elif k == "digits":
             _, s, cx, top, gap, a = c

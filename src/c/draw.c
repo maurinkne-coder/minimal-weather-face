@@ -45,8 +45,7 @@ static GPoint corner_pt(int ccx, int ccy, int c, int32_t angle) {
 
 // A point on a rounded rectangle `inset` pixels inside the screen, at
 // fraction f (0..FRAC) of the way round, starting top centre, clockwise.
-static GPoint rect_pt(GRect b, int32_t f, int inset) {
-  int c = CORNER_R;
+static GPoint rect_pt_r(GRect b, int32_t f, int inset, int c) {
   int l = b.origin.x + inset, t = b.origin.y + inset;
   int r = b.origin.x + b.size.w - 1 - inset, btm = b.origin.y + b.size.h - 1 - inset;
   int w = r - l, h = btm - t;
@@ -74,6 +73,10 @@ static GPoint rect_pt(GRect b, int32_t f, int inset) {
   if (d < arc) return corner_pt(l + c, t + c, c, 3 * q + d * q / arc);
   d -= arc;
   return GPoint(l + c + d, t);
+}
+
+static GPoint rect_pt(GRect b, int32_t f, int inset) {
+  return rect_pt_r(b, f, inset, CORNER_R);
 }
 #endif
 
@@ -222,8 +225,31 @@ static int bar_len(int32_t p) {
   return len < 3 ? 3 : len;
 }
 
-// Colour grade for an hour's rain (0.1 mm): light, medium or heavy.
-static GColor rain_color(const Theme *th, int p) {
+// True for the light backgrounds (Daylight, Sand).
+static bool light_bg(const Theme *th) {
+  uint8_t b = th->bg.argb;
+  return ((b >> 4) & 3) + ((b >> 2) & 3) + (b & 3) >= 7;
+}
+
+// Colour of a rain bar from the amount (0.1 mm per hour) and the hour's
+// weather code. Theme blues grade light, medium and heavy rain; then fixed
+// warning colours: orange for strong rain (8 mm/h and more), red for a
+// thunderstorm or a downpour (15 mm/h and more), violet for the most extreme
+// (25 mm/h and more, the most the forecast can carry) and for freezing rain
+// (ice on the ground). Snow is white (dark grey on light backgrounds). Mono
+// keeps its greys.
+static GColor rain_color(const Theme *th, int p, uint8_t code) {
+#ifdef PBL_COLOR
+  if (g_set.theme != THEME_MONO) {
+    if (p >= 250) return argb(0xE7);              // extreme, 25 mm/h and more: violet
+    if (code >= 95 || p >= 150) return GColorRed;
+    if (p >= 80) return GColorOrange;
+    if (code == 56 || code == 57 || code == 66 || code == 67) return argb(0xE7);  // freezing rain: violet
+    if ((code >= 71 && code <= 77) || code == 85 || code == 86) {
+      return light_bg(th) ? GColorDarkGray : GColorWhite;
+    }
+  }
+#endif
   return p >= 40 ? th->heavy : p >= 10 ? th->medium : th->light;
 }
 
@@ -240,15 +266,17 @@ static void draw_quad(GContext *ctx, GPoint a, GPoint c, GPoint d, GPoint e, boo
 // Rain rate (0.1 mm per hour) for the half hour starting at `slot`. The next
 // two hours use the 15-minute data when it covers them; later slots use the
 // hourly forecast.
-static int slot_rain(time_t slot, bool *likely) {
+static int slot_rain(time_t slot, int len_s, bool *likely) {
   int k = wx_index_at(slot);
   uint8_t pr = k >= 0 ? g_wx.prob[k] : 0;
   *likely = pr == PROB_UNKNOWN || pr >= 50;
   if (g_wx.m15_count) {
     int32_t d = (int32_t)(slot - (time_t)g_wx.m15_t0);
-    if (d >= 0 && d % 900 == 0 && d / 900 + 1 < g_wx.m15_count) {
-      int i = d / 900;
-      return (g_wx.m15[i] + g_wx.m15[i + 1]) * 2;   // two quarters -> per hour
+    int q = len_s / 900;                               // quarters in this slot
+    if (d >= 0 && d % 900 == 0 && d / 900 + q <= g_wx.m15_count) {
+      int i = d / 900, sum = 0;
+      for (int j = 0; j < q; j++) sum += g_wx.m15[i + j];
+      return sum * 4 / q;                              // quarters -> per hour
     }
   }
   return k >= 0 ? g_wx.precip[k] : 0;
@@ -259,20 +287,21 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
   const int range_s = range * 3600;
   graphics_context_set_antialiased(ctx, true);
 
-  // 30-minute slots, aligned to the clock (:00 and :30). Each slot is a faint
-  // dash along the edge; where rain is coming, a bar grows inward instead.
-  const int32_t slot_gap = FRAC / (range * 2) * 12 / 100;
-  time_t slot = now - now % 1800;
-  for (; slot < now + range_s; slot += 1800) {
+  // Slots of 15, 30 or 60 minutes (setting), aligned to the clock. Each slot
+  // is a faint dash along the edge; where rain is coming, a bar grows inward.
+  const int L = (g_set.barslot == 15 || g_set.barslot == 60 ? g_set.barslot : 30) * 60;
+  const int32_t slot_gap = FRAC / (range_s / L) * 12 / 100;
+  time_t slot = now - now % L;
+  for (; slot < now + range_s; slot += L) {
     time_t s0 = slot < now ? now : slot;
-    time_t s1 = slot + 1800 > now + range_s ? now + range_s : slot + 1800;
+    time_t s1 = slot + L > now + range_s ? now + range_s : slot + L;
     int32_t f0 = frac_of(s0, now, range_s) + (slot < now ? 0 : slot_gap);
     int32_t f1 = frac_of(s1, now, range_s) - slot_gap;
     if (f1 <= f0) continue;
     if (f1 * 1000 / FRAC > g_view.reveal) break;
 
     bool likely;
-    int rate = slot_rain(slot, &likely);   // 0.1 mm per hour
+    int rate = slot_rain(slot, L, &likely);   // 0.1 mm per hour
     int len = bar_len(rate);
     if (!len) {
       graphics_context_set_stroke_color(ctx, th->base);
@@ -287,7 +316,8 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
       continue;
     }
     // Colour = how much; solid = likely (50 % or more), outline = unlikely.
-    GColor c = rain_color(th, rate);
+    int hi = wx_index_at(slot < now ? now : slot);
+    GColor c = rain_color(th, rate, hi >= 0 ? g_wx.code[hi] : 0);
     graphics_context_set_fill_color(ctx, c);
     graphics_context_set_stroke_color(ctx, c);
     graphics_context_set_stroke_width(ctx, 1);
@@ -295,19 +325,16 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
               track_pt(b, f1, RAIN_EDGE + len), track_pt(b, f0, RAIN_EDGE + len), likely);
   }
 
-  // "Now" marker on the base line, and the scroll cursor during a wrist flick.
-  GPoint now_p = track_pt(b, 0, RAIN_EDGE);
-  graphics_context_set_fill_color(ctx, th->bg);
-  graphics_fill_circle(ctx, now_p, 6);
-  graphics_context_set_fill_color(ctx, th->fg);
-  graphics_fill_circle(ctx, now_p, 4);
+  // "Now" is a short tick from the screen edge across the base line, and the
+  // scroll cursor during a wrist flick a matching tick in the accent colour:
+  // small marks that leave the bars and the text in view.
+  graphics_context_set_stroke_width(ctx, 2);
+  graphics_context_set_stroke_color(ctx, th->fg);
+  graphics_draw_line(ctx, track_pt(b, 0, 0), track_pt(b, 0, RAIN_EDGE + 3));
   if (g_view.scrub >= 0) {
     int32_t f = (int32_t)((int64_t)g_view.scrub * FRAC / (range * 10));
-    GPoint p = track_pt(b, f, RAIN_EDGE);
-    graphics_context_set_fill_color(ctx, th->bg);
-    graphics_fill_circle(ctx, p, 6);
-    graphics_context_set_fill_color(ctx, th->accent);
-    graphics_fill_circle(ctx, p, 4);
+    graphics_context_set_stroke_color(ctx, th->accent);
+    graphics_draw_line(ctx, track_pt(b, f, 0), track_pt(b, f, RAIN_EDGE + 3));
   }
 }
 
@@ -332,14 +359,73 @@ static void upper_utf8(char *s) {
   }
 }
 
-void draw_face(Layer *layer, GContext *ctx) {
-  GRect b = layer_get_bounds(layer);
-  time_t now = g_view.now;
-  Theme th = current_theme(now);
+// Everything except the forecast ring: date, clock, info row, lines and
+// the bottom line. Drawn on top of the ring.
+// ---- Symbols beside the middle text ----
 
-  graphics_context_set_fill_color(ctx, th.bg);
-  graphics_fill_rect(ctx, b, 0, GCornerNone);
+#define SYM_BOLT SYM_COUNT  // the charging bolt, never picked in the settings
 
+// Moon phase 0..1000 (0 new, 500 full), from the mean length of a lunar
+// month counted from the new moon of 6 January 2000, 18:14 UTC.
+static int moon_phase(time_t now) {
+  const int32_t month = 2551443;  // seconds
+  int32_t t = (int32_t)((now - 947182440) % month);
+  if (t < 0) t += month;
+  return (int)((int64_t)t * 1000 / month);
+}
+
+// Chance of rain in % for the hour now, or -1 when there is no forecast.
+static int rain_chance(int wi) {
+  if (wi < 0) return -1;
+  if (g_wx.prob[wi] != PROB_UNKNOWN) return g_wx.prob[wi];
+  return g_wx.precip[wi] ? 100 : 0;  // model without chances: rain or not
+}
+
+static bool symbol_shown(int kind, time_t now, int wi, bool fresh) {
+  switch (kind) {
+    case SYM_WEATHER: return fresh || wi >= 0;
+    case SYM_RAIN: return wi >= 0;
+    case SYM_PHONE: return !connection_service_peek_pebble_app_connection();
+    case SYM_QUIET: return quiet_time_is_active();
+    case SYM_WIND: return wi >= 0 && g_wx.winddir[wi] != 255;
+    case SYM_MOON: return true;
+    case SYM_HEART: return g_view.heart > 0;
+    case SYM_BOLT: return true;
+    default: return false;
+  }
+}
+
+static void draw_symbol(GContext *ctx, const Theme *th, int kind, GPoint c, time_t now, int wi,
+                        bool fresh) {
+  bool mono = g_set.theme == THEME_MONO;
+  GColor warm = mono ? th->fg : light_bg(th) ? GColorOrange : GColorChromeYellow;
+  GColor water = mono ? th->fg : th->medium;
+  GColor alarm = mono ? th->fg : GColorRed;
+  switch (kind) {
+    case SYM_WEATHER: {
+      IconColors k = { .cloud = th->fg, .sun = warm, .water = water };
+      uint8_t code = fresh ? g_wx.cur_code : g_wx.code[wi];
+      icon_weather(ctx, c, code, is_daytime(now), &k);
+      break;
+    }
+    case SYM_RAIN: icon_drop(ctx, c, rain_chance(wi), water); break;
+    case SYM_PHONE: icon_phone_off(ctx, c, th->fg, alarm); break;
+    case SYM_QUIET: icon_quiet(ctx, c, th->fg); break;
+    case SYM_WIND: {
+      bool gusty = g_set.gust && g_wx.gust[wi] >= g_set.gust;
+      // The forecast gives where the wind comes from; the arrow shows where it goes.
+      icon_arrow(ctx, c, g_wx.winddir[wi] * 2 + 180, gusty ? th->accent : th->fg);
+      break;
+    }
+    case SYM_MOON: icon_moon_phase(ctx, c, moon_phase(now), th->fg, th->dim); break;
+    case SYM_HEART: icon_heart(ctx, c, g_view.heart > 100, mono ? th->fg : g_view.heart > 100 ? GColorRed : th->fg); break;
+    case SYM_BOLT: icon_bolt(ctx, c, warm); break;
+  }
+}
+
+
+static void draw_text_layer(GContext *ctx, GRect b, const Theme *thp, time_t now) {
+  const Theme th = *thp;
   char hh[4], mm[4], date[16], left[40], right[64], corner[24];
   text_clock_parts(hh, sizeof(hh), mm, sizeof(mm), now);
   text_date(date, sizeof(date), now);
@@ -360,9 +446,9 @@ void draw_face(Layer *layer, GContext *ctx) {
   // CAP is the digit height (the height of the digit images), GAP the space
   // between two digits.
 #ifdef PBL_ROUND
-  const int CAP = 75, GAP = 13, MAX_W = 192, BAR_W = 166;
+  const int CAP = 75, GAP = 13, MAX_W = 192, BAR_W = 166, ROW_W = 228;
 #else
-  const int CAP = 78, GAP = 14, MAX_W = 160, BAR_W = 174;
+  const int CAP = 78, GAP = 14, MAX_W = 160, BAR_W = 174, ROW_W = 190;
 #endif
   const int HALF = 15;                 // centre line to the digits
   const int SMALL_CAP = 9, SMALL_PAD = 4, SMALL_GAP = 6;
@@ -384,7 +470,7 @@ void draw_face(Layer *layer, GContext *ctx) {
     text_temp(cur, sizeof(cur), now);
     GRect wide = GRect(0, 0, 200, 18);
     if (text_hilo(lo, sizeof(lo), hi, sizeof(hi), now)) {
-      const int GAP = 12;
+      const int GAP = 8;   // between low, now and high
       int wl = graphics_text_layout_get_content_size(lo, g_small_font, wide, GTextOverflowModeFill, GTextAlignmentLeft).w;
       int wc = graphics_text_layout_get_content_size(cur, g_small_font, wide, GTextOverflowModeFill, GTextAlignmentLeft).w;
       int wh = graphics_text_layout_get_content_size(hi, g_small_font, wide, GTextOverflowModeFill, GTextAlignmentLeft).w;
@@ -414,11 +500,9 @@ void draw_face(Layer *layer, GContext *ctx) {
     GColor c = th.fg;
 #ifdef PBL_COLOR
     // Light backgrounds (Daylight, Sand) get the darker green.
-    uint8_t b = th.bg.argb;
-    bool light_bg = ((b >> 4) & 3) + ((b >> 2) & 3) + (b & 3) >= 7;
     if (g_set.battline == BATT_COLOR && g_set.theme != THEME_MONO) {
       // Colourful: green above 30%, orange down to 10%, red below 10%.
-      if (pct > 30) c = light_bg ? GColorIslamicGreen : GColorGreen;
+      if (pct > 30) c = light_bg(&th) ? GColorIslamicGreen : GColorGreen;
       else if (pct >= 10) c = GColorOrange;
       else c = GColorRed;
     } else if (pct <= 20 && !g_view.charging && g_set.theme != THEME_MONO) {
@@ -442,8 +526,19 @@ void draw_face(Layer *layer, GContext *ctx) {
   }
 
   // Info row: temperature in the main colour, then the smart line in the
-  // accent colour. Both use the same font so they share one baseline.
+  // accent colour. Both use the same font so they share one baseline. A
+  // symbol picked in the settings sits on each side, centred between the two
+  // lines; while charging a lightning bolt takes the right one's place.
   {
+    int wi = wx_index_at(now);
+    bool fresh = g_wx.cur_t && now - (time_t)g_wx.cur_t < 75 * 60;
+    int kl = g_set.symleft, kr = g_view.charging ? SYM_BOLT : g_set.symright;
+    bool has_wx = symbol_shown(kl, now, wi, fresh);
+    bool has_bolt = symbol_shown(kr, now, wi, fresh);
+    // With symbols the row may run a little wider (over the ring, which it
+    // covers anyway); the text leaves 20 px on each side for them.
+    const int ICON_HALF = 7, ICON_GAP = 6;
+    int max_w = (has_wx || has_bolt) ? ROW_W - 2 * (2 * ICON_HALF + ICON_GAP) : MAX_W;
     GFont f = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
     // Lines sit at cy-13 and cy+11 (2 px from the digits each). The capital
     // letters and digits of the text are centred in the 22 px between them.
@@ -454,7 +549,7 @@ void draw_face(Layer *layer, GContext *ctx) {
     int wr = right[0] ? graphics_text_layout_get_content_size(right, f, wide,
                                                               GTextOverflowModeTrailingEllipsis,
                                                               GTextAlignmentLeft).w : 0;
-    if (wl + 5 + wr > MAX_W && right[0]) {
+    if (wl + 5 + wr > max_w && right[0]) {
       // Too long: drop both to the smaller font before cutting anything off.
       f = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
       top = cy - 8;
@@ -464,7 +559,7 @@ void draw_face(Layer *layer, GContext *ctx) {
                                                  GTextAlignmentLeft).w;
     }
     int gap = (wl && wr) ? 5 : 0;
-    if (wl + gap + wr > MAX_W) wr = MAX_W - wl - gap;
+    if (wl + gap + wr > max_w) wr = max_w - wl - gap;
     int x0 = cx - (wl + gap + wr) / 2;
     graphics_context_set_text_color(ctx, th.fg);
     graphics_draw_text(ctx, left, f, GRect(x0, top, wl + 2, 24), GTextOverflowModeTrailingEllipsis,
@@ -474,9 +569,107 @@ void draw_face(Layer *layer, GContext *ctx) {
       graphics_draw_text(ctx, right, f, GRect(x0 + wl + gap, top, wr + 2, 24),
                          GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
     }
+    // Middle of the 22 px between the lines (cy-11 .. cy+10).
+    const int icon_y = cy - 1;
+    const int text_w = wl + gap + wr;
+    if (has_wx) draw_symbol(ctx, &th, kl, GPoint(x0 - ICON_GAP - ICON_HALF, icon_y), now, wi, fresh);
+    if (has_bolt) draw_symbol(ctx, &th, kr, GPoint(x0 + text_w + ICON_GAP + ICON_HALF, icon_y), now, wi, fresh);
   }
 
-  // Turn the text, then draw the forecast line already turned.
+}
+
+// A point `inset` pixels inside the screen edge, fraction f of the way
+// round from the top centre, clockwise; upright (no tilt).
+static GPoint edge_pt(GRect b, int32_t f, int inset, int corner) {
+#if defined(PBL_ROUND)
+  (void)corner;
+  return round_pt(b, f, inset);
+#else
+  return rect_pt_r(b, f, inset, corner);
+#endif
+}
+
+// A ring of the given width all round the screen edge, drawn as short
+// segments so it follows the round screen or the rounded corners.
+// `corner` is the corner radius on rectangular screens.
+static void edge_ring(GContext *ctx, GRect b, int inset, int width, int corner, int32_t end, GColor c) {
+  if (end <= 0) return;
+  const int STEPS = 160;
+  graphics_context_set_stroke_width(ctx, width);
+  graphics_context_set_stroke_color(ctx, c);
+  GPoint prev = edge_pt(b, 0, inset, corner);
+  int n = (int)((int64_t)STEPS * end / FRAC) + 1;
+  for (int i = 1; i <= n; i++) {
+    GPoint q = edge_pt(b, (int32_t)((int64_t)end * i / n), inset, corner);
+    graphics_draw_line(ctx, prev, q);
+    prev = q;
+  }
+}
+
+static GColor charge_green(const Theme *th) {
+  if (g_set.theme == THEME_MONO) return th->fg;
+  return light_bg(th) ? GColorIslamicGreen : GColorGreen;
+}
+
+// Charging animation, shown for a moment when the cable goes in: a thick ring
+// round the screen edge fills up to the battery level, with a big lightning
+// bolt and the percentage in the middle. `p` runs 0..1000.
+static void draw_charge(GContext *ctx, GRect b, const Theme *th, int p) {
+  const GColor green = charge_green(th);
+  const int cx = b.origin.x + b.size.w / 2, cy = b.origin.y + b.size.h / 2;
+  const int pct = g_view.battery > 100 ? 100 : g_view.battery;
+
+  graphics_context_set_fill_color(ctx, th->bg);
+  graphics_fill_rect(ctx, b, 0, GCornerNone);
+  graphics_context_set_antialiased(ctx, true);
+
+  // Ring: faint track, then the green part sweeping in (ease-out over the
+  // first half, then holding).
+  const int INSET = PBL_IF_ROUND_ELSE(9, 8), STROKE = PBL_IF_ROUND_ELSE(10, 9);
+  int t = p >= 500 ? 1000 : p * 2;                      // 0..1000 over the first half
+  int inv = 1000 - t;
+  int eased = 1000 - (int)((int64_t)inv * inv / 1000 * inv / 1000);  // ease-out cubic
+  int32_t fill = (int32_t)((int64_t)FRAC * pct / 100 * eased / 1000);
+  // Softly rounded on Time 2, like a pill.
+  edge_ring(ctx, b, INSET, STROKE, 44, FRAC, th->dim);
+  edge_ring(ctx, b, INSET, STROKE, 44, fill, green);
+
+  // Big bolt, growing in quickly at the start.
+  int sc = p < 150 ? 3 + p * 2 / 150 : 5;               // scale 3 -> 5
+  int by = cy - 16;
+  GPoint pts[] = { {cx, by - 6 * sc}, {cx - 4 * sc, by + sc}, {cx - sc, by + sc},
+                   {cx - 2 * sc, by + 6 * sc}, {cx + 4 * sc, by - sc}, {cx + sc, by - sc},
+                   {cx + 3 * sc, by - 6 * sc} };
+  GPathInfo info = { .num_points = 7, .points = pts };
+  GPath *path = gpath_create(&info);
+  if (path) {
+    graphics_context_set_fill_color(ctx, green);
+    gpath_draw_filled(ctx, path);
+    gpath_destroy(path);
+  }
+
+  // Percentage under the bolt.
+  char buf[8];
+  snprintf(buf, sizeof(buf), "%d%%", pct);
+  graphics_context_set_text_color(ctx, th->fg);
+  graphics_draw_text(ctx, buf, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD),
+                     GRect(cx - 50, cy + 22, 100, 34), GTextOverflowModeFill,
+                     GTextAlignmentCenter, NULL);
+}
+
+void draw_face(Layer *layer, GContext *ctx) {
+  GRect b = layer_get_bounds(layer);
+  time_t now = g_view.now;
+  Theme th = current_theme(now);
+
+  if (g_view.charge_anim >= 0) {
+    draw_charge(ctx, b, &th, g_view.charge_anim);
+    return;
+  }
+
+  graphics_context_set_fill_color(ctx, th.bg);
+  graphics_fill_rect(ctx, b, 0, GCornerNone);
+
   static int s_tilt_deg = 0;
   static GSize s_tilt_size;
   if (g_set.tilt != s_tilt_deg || s_tilt_size.w != b.size.w || s_tilt_size.h != b.size.h) {
@@ -485,6 +678,23 @@ void draw_face(Layer *layer, GContext *ctx) {
     s_tilt_f = 0;
     s_tilt_f = tilt_frac(b, g_set.tilt);
   }
-  tilt_apply(ctx, b, g_set.tilt, th.bg);
+
+  // The text always sits on top of the rain bars. Upright, that is just the
+  // drawing order. Turned, the text is drawn first and set aside, the ring is
+  // drawn already turned with plain geometry (so it stays sharp), and the
+  // text is turned and laid over it with smoothed edges.
+  // While charging, a thin green ring runs round the very edge, under all.
+  // It belongs to the screen, not the face, so it is never turned.
+  const bool ring = g_view.charging;
+  if (g_set.tilt % 360 == 0) {
+    if (ring) edge_ring(ctx, b, 1, 2, PBL_IF_ROUND_ELSE(0, CORNER_R), FRAC, charge_green(&th));
+    draw_track(ctx, b, &th, now);
+    draw_text_layer(ctx, b, &th, now);
+    return;
+  }
+  draw_text_layer(ctx, b, &th, now);
+  bool turned = tilt_begin(ctx, b, th.bg);
+  if (ring) edge_ring(ctx, b, 1, 2, PBL_IF_ROUND_ELSE(0, CORNER_R), FRAC, charge_green(&th));
   draw_track(ctx, b, &th, now);
+  if (turned) tilt_end(ctx, b, g_set.tilt);
 }

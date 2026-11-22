@@ -19,6 +19,7 @@ typedef struct {
   uint8_t gust[WX_HOURS];      // km/h
   uint8_t uv[WX_HOURS];        // 0.1 UV index
   uint8_t day[WX_HOURS];       // 1 = daylight
+  uint8_t winddir[WX_HOURS];   // degrees / 2 the wind comes from, 255 = unknown
   uint32_t m15_t0;             // UTC epoch of m15[0]
   uint8_t m15_count;
   uint8_t m15[WX_M15];         // 0.1 mm per 15 min
@@ -48,9 +49,11 @@ enum { CLOCK_AUTO, CLOCK_24, CLOCK_12 };
 enum { TEMP_C, TEMP_F };
 enum { RAIN_MM, RAIN_IN };
 enum { BATT_OFF, BATT_PLAIN, BATT_COLOR };
+// Symbols beside the middle text.
+enum { SYM_OFF, SYM_WEATHER, SYM_RAIN, SYM_PHONE, SYM_QUIET, SYM_WIND, SYM_MOON, SYM_HEART, SYM_COUNT };
 enum { WIND_KMH, WIND_MPH, WIND_MS, WIND_KT, WIND_BFT };
 
-#define SETTINGS_VERSION 5
+#define SETTINGS_VERSION 6
 
 typedef struct {
   uint8_t version;
@@ -78,6 +81,12 @@ typedef struct {
   uint8_t owncolors;  // use textcolor/accentcolor instead of the palette's
   uint8_t textcolor;  // Pebble 8-bit colour (0b11RRGGBB)
   uint8_t accentcolor;
+  uint8_t chargebuzz; // buzz on plugging in, at 80 % and at 100 % (since version 6)
+  uint8_t barslot;    // minutes per rain bar: 15, 30 or 60 (since version 6)
+  uint8_t symleft;    // SYM_* left of the middle text (since version 6)
+  uint8_t symright;   // SYM_* right of it; the charging bolt takes its place while charging
+  uint8_t buzz80;     // buzzes at 80 % while charging, 0 = none (since version 6)
+  uint8_t buzzfull;   // buzzes when full, 0 = none (since version 6)
 } Settings;
 
 // ---- Things the face shows that come from the watch itself ----
@@ -85,6 +94,7 @@ typedef struct {
 typedef struct {
   time_t now;
   int reveal;         // 0..1000, ring drawing itself in
+  int charge_anim;    // -1 = off, else 0..1000 through the charging animation
   int scrub;          // -1 = off, else tenths of an hour ahead of now
   uint8_t battery;
   bool charging;
@@ -125,6 +135,21 @@ void digits_draw(GContext *ctx, const char *s, int cx, int top, int gap, GColor 
 // draw.c
 void draw_face(Layer *layer, GContext *ctx);
 
-// tilt.c: turns everything drawn so far by `deg` degrees round the centre.
-void tilt_apply(GContext *ctx, GRect bounds, int deg, GColor bg);
+// icons.c: small weather symbol for a WMO code round `c`, and the charging bolt.
+typedef struct { GColor cloud, sun, water; } IconColors;
+void icon_weather(GContext *ctx, GPoint c, uint8_t code, bool day, const IconColors *k);
+void icon_bolt(GContext *ctx, GPoint c, GColor col);
+void icon_drop(GContext *ctx, GPoint c, int level, GColor water);
+void icon_phone_off(GContext *ctx, GPoint c, GColor col, GColor slash);
+void icon_quiet(GContext *ctx, GPoint c, GColor col);
+void icon_arrow(GContext *ctx, GPoint c, int deg, GColor col);
+void icon_moon_phase(GContext *ctx, GPoint c, int phase, GColor lit, GColor dark);
+void icon_heart(GContext *ctx, GPoint c, bool filled, GColor col);
+
+// tilt.c: tilt_begin sets aside everything drawn so far (the text layer) and
+// clears the screen to `bg`; tilt_end lays it back on top, turned `deg`
+// degrees clockwise round the centre, with smoothed edges. tilt_begin
+// returns false (and leaves the screen alone) when there is no memory.
+bool tilt_begin(GContext *ctx, GRect bounds, GColor bg);
+void tilt_end(GContext *ctx, GRect bounds, int deg);
 void tilt_release(void);
