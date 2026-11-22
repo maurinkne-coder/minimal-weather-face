@@ -1,0 +1,52 @@
+# Builds the watchface install file (.pbw) on every push.
+# On main it is also published as the "latest" release, so it can be
+# downloaded on a phone and opened with the Pebble app.
+name: Build watchface
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install the Pebble tool and SDK
+        run: |
+          pip install uv
+          uv tool install pebble-tool
+          yes | pebble sdk install latest
+
+      - name: Build
+        run: pebble build
+
+      - name: Keep the .pbw
+        uses: actions/upload-artifact@v4
+        with:
+          name: contour-pbw
+          path: build/*.pbw
+
+      - name: Publish as latest release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest build
+          body: Open the .pbw on your phone and choose the Pebble app to install it.
+          prerelease: false
+          make_latest: true
+          files: build/*.pbw
