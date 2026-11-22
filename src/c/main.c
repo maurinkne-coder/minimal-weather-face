@@ -37,6 +37,7 @@ static void settings_default(void) {
     .wind_unit = WIND_KMH,
     .updates = 1,
     .interval = 30,
+    .tilt = 0,
   };
 }
 
@@ -201,8 +202,11 @@ static bool read_settings(DictionaryIterator *it) {
   s.wind_unit = read_int(it, MESSAGE_KEY_WindUnit, s.wind_unit);
   s.updates = read_int(it, MESSAGE_KEY_Updates, s.updates);
   s.interval = read_int(it, MESSAGE_KEY_Interval, s.interval);
+  s.tilt = read_int(it, MESSAGE_KEY_Tilt, s.tilt);
+  if (s.tilt <= -360 || s.tilt >= 360) s.tilt = 0;
   if (s.lang >= LANG_COUNT) s.lang = LANG_EN;
   g_set = s;
+  if (!g_set.tilt) tilt_release();
   persist_write_data(P_SETTINGS, &g_set, sizeof(g_set));
   return true;
 }
@@ -321,6 +325,7 @@ static void window_load(Window *window) {
 }
 
 static void window_unload(Window *window) {
+  tilt_release();
   layer_destroy(s_canvas);
   s_canvas = NULL;
 }

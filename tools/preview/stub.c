@@ -62,10 +62,12 @@ int main(int argc, char **argv) {
   time_t now = timegm(&tm);
   g_set = (Settings){ .version = 1, .theme = atoi(argv[3]), .range = atoi(argv[6]), .corner = atoi(argv[7]),
     .anim = 1, .frost = 1, .gust = 50, .uv = 6, .sunline = 1, .lang = atoi(argv[4]), .clock = 0,
-    .updates = 1, .interval = 30 };
+    .updates = 1, .interval = 30, .tilt = (int16_t)(argc > 10 ? atoi(argv[10]) : 0) };
   fake(now, atoi(argv[5]));
   g_view = (ViewState){ .now = now, .reveal = 1000, .scrub = atoi(argv[8]), .battery = 80, .steps = 8214, .heart = 64 };
   struct GContext ctx = {0}; Layer l;
   draw_face(&l, &ctx);
   return 0;
 }
+void tilt_apply(GContext *c, GRect b, int deg, GColor bg) { (void)b; if (deg) printf("[\"rotate\",%d,%d]\n", deg, bg.argb); (void)c; }
+void tilt_release(void) {}

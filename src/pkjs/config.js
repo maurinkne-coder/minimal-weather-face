@@ -7,7 +7,7 @@ module.exports = [
   },
   {
     type: 'text',
-    defaultValue: 'The next hours of weather as a thin line around the time.'
+    defaultValue: 'The next hours of weather as one thin line around the time.'
   },
 
   {
@@ -20,17 +20,38 @@ module.exports = [
         label: 'Theme',
         defaultValue: '0',
         options: [
-          { label: 'Midnight (black, temperature in colour)', value: '0' },
+          { label: 'Midnight (black)', value: '0' },
           { label: 'Daylight (white, easy to read outdoors)', value: '1' },
-          { label: 'Mono (black and white only)', value: '2' },
-          { label: 'Graphite (dark grey, temperature in colour)', value: '3' },
+          { label: 'Mono (black and white only, no blue rain)', value: '2' },
+          { label: 'Graphite (dark grey)', value: '3' },
           { label: 'Automatic (Daylight by day, Midnight at night)', value: '4' }
         ]
       },
       {
         type: 'select',
+        messageKey: 'Tilt',
+        label: 'Tilt',
+        description: 'Turns the whole face, for example if you wear the watch on the inside of your wrist or look at it from an angle while cycling.',
+        defaultValue: '0',
+        options: [
+          { label: 'Upright', value: '0' },
+          { label: '15° clockwise', value: '15' },
+          { label: '30° clockwise', value: '30' },
+          { label: '45° clockwise', value: '45' },
+          { label: '60° clockwise', value: '60' },
+          { label: '90° clockwise', value: '90' },
+          { label: '15° anticlockwise', value: '-15' },
+          { label: '30° anticlockwise', value: '-30' },
+          { label: '45° anticlockwise', value: '-45' },
+          { label: '60° anticlockwise', value: '-60' },
+          { label: '90° anticlockwise', value: '-90' },
+          { label: 'Upside down', value: '180' }
+        ]
+      },
+      {
+        type: 'select',
         messageKey: 'Range',
-        label: 'Track length (Pebble Time 2)',
+        label: 'Line length (Pebble Time 2)',
         description: 'On Round 2 the ring always shows 24 hours.',
         defaultValue: '24',
         options: [
@@ -56,7 +77,7 @@ module.exports = [
         type: 'toggle',
         messageKey: 'Anim',
         label: 'Animations',
-        description: 'The track draws itself when the face opens; a wrist flick walks through the coming hours. Always off in Quiet Time and below 20% battery.',
+        description: 'The line draws itself when the face opens; a wrist flick walks through the coming hours. Always off in Quiet Time and below 20% battery.',
         defaultValue: true
       }
     ]

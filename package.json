@@ -21,7 +21,7 @@
       "Theme", "Range", "Corner", "Anim",
       "Frost", "Gust", "Uv", "SunLine",
       "Lang", "Clock", "TempUnit", "RainUnit", "WindUnit",
-      "Updates", "Interval", "Model", "LocMode", "City",
+      "Updates", "Interval", "Tilt", "Model", "LocMode", "City",
       "Request", "JsReady",
       "WxT0", "WxTemp", "WxPrecip", "WxProb", "WxCode", "WxGust", "WxUv", "WxDay",
       "WxM15T0", "WxM15", "WxRise", "WxSet",

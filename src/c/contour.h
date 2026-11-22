@@ -44,7 +44,7 @@ enum { TEMP_C, TEMP_F };
 enum { RAIN_MM, RAIN_IN };
 enum { WIND_KMH, WIND_MPH, WIND_MS, WIND_KT, WIND_BFT };
 
-#define SETTINGS_VERSION 1
+#define SETTINGS_VERSION 2
 
 typedef struct {
   uint8_t version;
@@ -63,6 +63,7 @@ typedef struct {
   uint8_t wind_unit;
   uint8_t updates;
   uint8_t interval;   // minutes
+  int16_t tilt;       // degrees the face is turned clockwise
 } Settings;
 
 // ---- Things the face shows that come from the watch itself ----
@@ -98,3 +99,7 @@ void fmt_temp(char *buf, size_t n, int16_t tenths);
 
 // draw.c
 void draw_face(Layer *layer, GContext *ctx);
+
+// tilt.c: turns everything drawn so far by `deg` degrees round the centre.
+void tilt_apply(GContext *ctx, GRect bounds, int deg, GColor bg);
+void tilt_release(void);

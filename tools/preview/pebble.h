@@ -19,6 +19,7 @@ typedef struct { int16_t top, right, bottom, left; } GEdgeInsets;
 #define ARRAY_LENGTH(a) (sizeof(a) / sizeof((a)[0]))
 #define TRIG_MAX_ANGLE 0x10000
 #define TRIG_MAX_RATIO 0xffff
+#define DEG_TO_TRIGANGLE(a) ((a) * TRIG_MAX_ANGLE / 360)
 #ifdef PBL_ROUND
 #define PBL_IF_ROUND_ELSE(a, b) (a)
 #else
