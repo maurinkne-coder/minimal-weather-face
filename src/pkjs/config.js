@@ -39,20 +39,41 @@ module.exports = [
         defaultValue: false
       },
       {
-        type: 'color',
+        type: 'select',
         messageKey: 'TextColor',
         label: 'Text colour (clock)',
         defaultValue: 'FFFFFF',
-        sunlight: true,
-        allowGray: true
+        options: [
+          { label: 'White', value: 'FFFFFF' },
+          { label: 'Light grey', value: 'AAAAAA' },
+          { label: 'Ice blue', value: 'AAFFFF' },
+          { label: 'Mint', value: 'AAFFAA' },
+          { label: 'Lemon', value: 'FFFF55' },
+          { label: 'Peach', value: 'FFAA55' },
+          { label: 'Rose', value: 'FFAAAA' },
+          { label: 'Lavender', value: 'AAAAFF' },
+          { label: 'Black (for light palettes)', value: '000000' },
+          { label: 'Navy (for light palettes)', value: '000055' }
+        ]
       },
       {
-        type: 'color',
+        type: 'select',
         messageKey: 'AccentColor',
         label: 'Accent colour (smart line)',
         defaultValue: '55FFFF',
-        sunlight: true,
-        allowGray: true
+        options: [
+          { label: 'Cyan', value: '55FFFF' },
+          { label: 'Mint', value: 'AAFFAA' },
+          { label: 'Green', value: '55FF55' },
+          { label: 'Yellow', value: 'FFFF00' },
+          { label: 'Orange', value: 'FFAA00' },
+          { label: 'Coral', value: 'FF5555' },
+          { label: 'Pink', value: 'FF55AA' },
+          { label: 'Violet', value: 'AA55FF' },
+          { label: 'White', value: 'FFFFFF' },
+          { label: 'Blue (for light palettes)', value: '0055AA' },
+          { label: 'Dark red (for light palettes)', value: 'AA0000' }
+        ]
       },
       {
         type: 'select',
