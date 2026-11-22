@@ -89,6 +89,18 @@ module.exports = [
       },
       {
         type: 'select',
+        messageKey: 'BarSlot',
+        label: 'Rain bar resolution',
+        description: 'How much time each rain bar covers. Shorter bars show more detail in the next two hours, where a 15-minute forecast is available.',
+        defaultValue: '30',
+        options: [
+          { label: '15 minutes (finest)', value: '15' },
+          { label: '30 minutes', value: '30' },
+          { label: '1 hour (calmest)', value: '60' }
+        ]
+      },
+      {
+        type: 'select',
         messageKey: 'Corner',
         label: 'Bottom line',
         description: 'Small text at the very bottom, under the minutes.',

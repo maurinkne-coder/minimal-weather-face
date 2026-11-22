@@ -79,6 +79,7 @@ typedef struct {
   uint8_t textcolor;  // Pebble 8-bit colour (0b11RRGGBB)
   uint8_t accentcolor;
   uint8_t chargebuzz; // buzz on plugging in, at 80 % and at 100 % (since version 6)
+  uint8_t barslot;    // minutes per rain bar: 15, 30 or 60 (since version 6)
 } Settings;
 
 // ---- Things the face shows that come from the watch itself ----

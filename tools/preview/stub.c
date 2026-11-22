@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
   time_t now = timegm(&tm);
   g_set = (Settings){ .version = 1, .theme = atoi(argv[3]), .range = atoi(argv[6]), .corner = atoi(argv[7]),
     .anim = 1, .frost = 1, .gust = 50, .uv = 6, .sunline = 1, .lang = atoi(argv[4]), .clock = 0,
-    .updates = 1, .interval = 30, .battline = (uint8_t)(atoi(argv[3]) == 1 ? 2 : 1), .stepbar = 1, .stepgoal = 10000, .tilt = (int16_t)(argc > 10 ? atoi(argv[10]) : 0) };
+    .updates = 1, .interval = 30, .battline = (uint8_t)(atoi(argv[3]) == 1 ? 2 : 1), .stepbar = 1, .stepgoal = 10000, .tilt = (int16_t)(argc > 10 ? atoi(argv[10]) : 0), .barslot = (uint8_t)(getenv("SLOT") ? atoi(getenv("SLOT")) : 30) };
   if (argc > 11) { g_set.owncolors = 1; g_set.textcolor = (uint8_t)strtol(argv[11], NULL, 16); g_set.accentcolor = (uint8_t)strtol(argv[12], NULL, 16); }
   fake(now, atoi(argv[5]));
   bool scenario0 = atoi(argv[5]) == 0;

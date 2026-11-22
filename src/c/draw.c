@@ -266,15 +266,17 @@ static void draw_quad(GContext *ctx, GPoint a, GPoint c, GPoint d, GPoint e, boo
 // Rain rate (0.1 mm per hour) for the half hour starting at `slot`. The next
 // two hours use the 15-minute data when it covers them; later slots use the
 // hourly forecast.
-static int slot_rain(time_t slot, bool *likely) {
+static int slot_rain(time_t slot, int len_s, bool *likely) {
   int k = wx_index_at(slot);
   uint8_t pr = k >= 0 ? g_wx.prob[k] : 0;
   *likely = pr == PROB_UNKNOWN || pr >= 50;
   if (g_wx.m15_count) {
     int32_t d = (int32_t)(slot - (time_t)g_wx.m15_t0);
-    if (d >= 0 && d % 900 == 0 && d / 900 + 1 < g_wx.m15_count) {
-      int i = d / 900;
-      return (g_wx.m15[i] + g_wx.m15[i + 1]) * 2;   // two quarters -> per hour
+    int q = len_s / 900;                               // quarters in this slot
+    if (d >= 0 && d % 900 == 0 && d / 900 + q <= g_wx.m15_count) {
+      int i = d / 900, sum = 0;
+      for (int j = 0; j < q; j++) sum += g_wx.m15[i + j];
+      return sum * 4 / q;                              // quarters -> per hour
     }
   }
   return k >= 0 ? g_wx.precip[k] : 0;
@@ -285,20 +287,21 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
   const int range_s = range * 3600;
   graphics_context_set_antialiased(ctx, true);
 
-  // 30-minute slots, aligned to the clock (:00 and :30). Each slot is a faint
-  // dash along the edge; where rain is coming, a bar grows inward instead.
-  const int32_t slot_gap = FRAC / (range * 2) * 12 / 100;
-  time_t slot = now - now % 1800;
-  for (; slot < now + range_s; slot += 1800) {
+  // Slots of 15, 30 or 60 minutes (setting), aligned to the clock. Each slot
+  // is a faint dash along the edge; where rain is coming, a bar grows inward.
+  const int L = (g_set.barslot == 15 || g_set.barslot == 60 ? g_set.barslot : 30) * 60;
+  const int32_t slot_gap = FRAC / (range_s / L) * 12 / 100;
+  time_t slot = now - now % L;
+  for (; slot < now + range_s; slot += L) {
     time_t s0 = slot < now ? now : slot;
-    time_t s1 = slot + 1800 > now + range_s ? now + range_s : slot + 1800;
+    time_t s1 = slot + L > now + range_s ? now + range_s : slot + L;
     int32_t f0 = frac_of(s0, now, range_s) + (slot < now ? 0 : slot_gap);
     int32_t f1 = frac_of(s1, now, range_s) - slot_gap;
     if (f1 <= f0) continue;
     if (f1 * 1000 / FRAC > g_view.reveal) break;
 
     bool likely;
-    int rate = slot_rain(slot, &likely);   // 0.1 mm per hour
+    int rate = slot_rain(slot, L, &likely);   // 0.1 mm per hour
     int len = bar_len(rate);
     if (!len) {
       graphics_context_set_stroke_color(ctx, th->base);

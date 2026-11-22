@@ -49,6 +49,7 @@ static void settings_default(void) {
     .textcolor = 0xFF,    // white
     .accentcolor = 0xFF,  // white until picked
     .chargebuzz = 1,
+    .barslot = 30,
   };
 }
 
@@ -59,8 +60,9 @@ static void settings_load(void) {
     Settings s = g_set;  // fields an older version did not have keep their defaults
     persist_read_data(P_SETTINGS, &s, size);
     if (s.version == 5) {
-      // Version 6 only added chargebuzz at the end.
+      // Version 6 only added chargebuzz and barslot at the end.
       s.chargebuzz = 1;
+      s.barslot = 30;
       s.version = SETTINGS_VERSION;
     }
     if (s.version == SETTINGS_VERSION) g_set = s;
@@ -273,12 +275,14 @@ static bool read_settings(DictionaryIterator *it) {
   s.stepcolor = read_int(it, MESSAGE_KEY_StepColor, s.stepcolor);
   s.rainalert = read_int(it, MESSAGE_KEY_RainAlert, s.rainalert);
   s.chargebuzz = read_int(it, MESSAGE_KEY_ChargeBuzz, s.chargebuzz) ? 1 : 0;
+  s.barslot = (uint8_t)read_int(it, MESSAGE_KEY_BarSlot, s.barslot);
   s.owncolors = read_int(it, MESSAGE_KEY_OwnColors, s.owncolors);
   // The colour pickers send 24-bit RGB; keep the nearest Pebble colour.
   if (dict_find(it, MESSAGE_KEY_TextColor)) s.textcolor = GColorFromHEX(read_int(it, MESSAGE_KEY_TextColor, 0)).argb;
   if (dict_find(it, MESSAGE_KEY_AccentColor)) s.accentcolor = GColorFromHEX(read_int(it, MESSAGE_KEY_AccentColor, 0)).argb;
   if (s.theme >= THEME_COUNT) s.theme = THEME_MIDNIGHT;
   if (s.tilt <= -360 || s.tilt >= 360) s.tilt = 0;
+  if (s.barslot != 15 && s.barslot != 60) s.barslot = 30;
   if (s.lang >= LANG_COUNT) s.lang = LANG_EN;
   g_set = s;
   if (!g_set.tilt) tilt_release();
