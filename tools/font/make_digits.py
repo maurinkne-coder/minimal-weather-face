@@ -35,24 +35,37 @@ f = TTFont(dst)
 X0, X1, Y0, Y1 = 57, 764, 0, 720       # same box as the other digits
 RC = 150                               # outer corner radius
 MID, VN, VD = 360, 34, 44              # notch: middle, half height, depth
+VR = 16                                # rounding where the side turns into the notch
 SH, SX0, SX1, CH = 80, 230, 591, 14    # slot height, slot x range, chamfer
 WALL = (Y1 - Y0 - 2 * SH) // 3         # equal top, middle and bottom bars
 
 pen = TTGlyphPen(None)
-# Outer shape, clockwise.
+
+def soft(corner, prev, nxt):
+    # Round the corner at `corner` (coming from `prev`, going to `nxt`).
+    import math
+    def toward(p, q):
+        dx, dy = q[0] - p[0], q[1] - p[1]
+        l = math.hypot(dx, dy)
+        return (round(p[0] + dx / l * VR), round(p[1] + dy / l * VR))
+    pen.lineTo(toward(corner, prev))
+    pen.qCurveTo(corner, toward(corner, nxt))
+
+# Outer shape, clockwise. The V tips stay sharp; the four corners where the
+# sides turn into the notches are slightly rounded.
 pen.moveTo((X1 - RC, Y0))
 pen.lineTo((X0 + RC, Y0))
 pen.qCurveTo((X0, Y0), (X0, Y0 + RC))
-pen.lineTo((X0, MID - VN))
+soft((X0, MID - VN), (X0, Y0 + RC), (X0 + VD, MID))
 pen.lineTo((X0 + VD, MID))
-pen.lineTo((X0, MID + VN))
+soft((X0, MID + VN), (X0 + VD, MID), (X0, Y1 - RC))
 pen.lineTo((X0, Y1 - RC))
 pen.qCurveTo((X0, Y1), (X0 + RC, Y1))
 pen.lineTo((X1 - RC, Y1))
 pen.qCurveTo((X1, Y1), (X1, Y1 - RC))
-pen.lineTo((X1, MID + VN))
+soft((X1, MID + VN), (X1, Y1 - RC), (X1 - VD, MID))
 pen.lineTo((X1 - VD, MID))
-pen.lineTo((X1, MID - VN))
+soft((X1, MID - VN), (X1 - VD, MID), (X1, Y0 + RC))
 pen.lineTo((X1, Y0 + RC))
 pen.qCurveTo((X1, Y0), (X1 - RC, Y0))
 pen.closePath()
