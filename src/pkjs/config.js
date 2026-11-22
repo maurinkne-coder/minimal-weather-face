@@ -63,8 +63,8 @@ module.exports = [
       {
         type: 'select',
         messageKey: 'Corner',
-        label: 'Extra line',
-        description: 'Small line under the smart line.',
+        label: 'Bottom line',
+        description: 'Small text at the very bottom, under the minutes.',
         defaultValue: '1',
         options: [
           { label: 'Nothing', value: '0' },
