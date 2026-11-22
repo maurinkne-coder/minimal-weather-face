@@ -6,9 +6,6 @@
     "pebble-app"
   ],
   "private": true,
-  "dependencies": {
-    "pebble-clay": "^1.0.4"
-  },
   "pebble": {
     "displayName": "Contour",
     "uuid": "ea94434e-5c34-4813-b3d8-c26a8125a27d",

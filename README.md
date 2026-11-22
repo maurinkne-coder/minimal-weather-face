@@ -87,8 +87,9 @@ pebble install --emulator emery            # try it in the emulator
 pebble install --phone <your phone's IP>   # or install it on the watch
 ```
 
-`pebble build` fetches the settings page library (`pebble-clay`) through npm,
-which is why npm must be installed.
+The settings page library (Clay) is bundled in `src/pkjs/vendor`, because the npm
+package refuses to build for Round 2. GitHub Actions also builds the `.pbw` on every
+push and publishes the one from `main` as the **Latest build** release.
 
 ## Code layout
 
