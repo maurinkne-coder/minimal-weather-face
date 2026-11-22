@@ -1,11 +1,11 @@
 #include "contour.h"
 
-// The face: one thin blue line round the edge of the screen, starting at the
-// dot at the top ("now") and running clockwise into the coming hours, like a
-// contour line. It hugs the edge while it stays dry and bends inward where
-// rain is coming: the deeper the bend, the more rain, and each rain spell is
-// labelled with its heaviest hour in mm (or inch). Likely rain is full blue,
-// dry or unlikely stretches are pale. Small dots mark 00, 06, 12 and 18 o'clock.
+// The face: an hourly rain bar chart round the edge of the screen, starting at
+// the dot at the top ("now") and running clockwise into the coming hours.
+// Bars grow inward from a faint base line: the longer the bar, the more rain.
+// Likely rain is full blue, unlikely rain pale, and each rain spell is
+// labelled with its heaviest hour in mm (or inch). Small dots mark 00, 06, 12
+// and 18 o'clock.
 
 #define FRAC 65536
 
@@ -18,13 +18,11 @@ typedef struct {
 // ---------------------------------------------------------------------------
 
 #if defined(PBL_ROUND)
-#define RAIN_EDGE 5       // the line when dry: pixels from the screen edge
-#define RAIN_DEPTH 18     // how far in it bends for heavy rain
-#define RAIN_W 3
+#define RAIN_EDGE 4       // base line: pixels from the screen edge
+#define RAIN_DEPTH 24     // longest bar (4 mm/h or more)
 #else
-#define RAIN_EDGE 3
-#define RAIN_DEPTH 12
-#define RAIN_W 2
+#define RAIN_EDGE 2
+#define RAIN_DEPTH 15
 #define CORNER_R 18
 #endif
 #define TICK_IN (RAIN_EDGE + RAIN_DEPTH + 5)
@@ -85,11 +83,13 @@ static GPoint rect_pt(GRect b, int32_t f, int inset) {
 // Where "now" sits when the face is turned: fraction of the way round.
 static int32_t s_tilt_f;
 
+#if !defined(PBL_ROUND)
 static int32_t isqrt(int32_t v) {
   int32_t r = 0;
   while ((r + 1) * (r + 1) <= v) r++;
   return r;
 }
+#endif
 
 // The point at fraction f round the face, `inset` pixels in from the edge,
 // measured at right angles to the edge.
@@ -175,30 +175,22 @@ static int32_t frac_of(time_t t, time_t now, int range_s) {
   return (int32_t)((int64_t)(t - now) * FRAC / range_s);
 }
 
-// How far the line bends in at time t (0 when dry). Hourly amounts are
-// placed at the middle of their hour and blended in between; a square root
-// keeps light rain visible while heavy rain still bends deeper.
-static int rain_depth_of(int32_t p) {
+// Bar length for an hour's rain (0.1 mm). Linear up to 4 mm/h, with a short
+// minimum so a drizzle still shows.
+static int bar_len(int32_t p) {
   if (p < 1) return 0;
-  if (p > 40) p = 40;                                  // 4 mm/h fills the depth
-  return 2 + (int)(isqrt(p * 100) * (RAIN_DEPTH - 2) / 63);
+  if (p > 40) p = 40;
+  int len = (int)(p * RAIN_DEPTH / 40);
+  return len < 3 ? 3 : len;
 }
 
-static int rain_depth(time_t t, bool *likely) {
-  *likely = false;
-  if (g_wx.count == 0) return 0;
-  int32_t x = (int32_t)(t - (time_t)g_wx.t0) - 1800;   // seconds past hour 0's middle
-  if (x < 0) x = 0;
-  int k = x / 3600;
-  if (k >= g_wx.count) return 0;
-  int32_t frac = x % 3600;
-  int32_t a = g_wx.precip[k];
-  int32_t c = k + 1 < g_wx.count ? g_wx.precip[k + 1] : a;
-  int32_t p = a + (c - a) * frac / 3600;               // 0.1 mm per hour
-  uint8_t pr = frac < 1800 || k + 1 >= g_wx.count ? g_wx.prob[k] : g_wx.prob[k + 1];
-  // Dry stretches stay pale, so the rain stands out in full blue.
-  *likely = p >= 1 && (pr == PROB_UNKNOWN || pr >= 50);
-  return rain_depth_of(p);
+static void fill_quad(GContext *ctx, GPoint a, GPoint c, GPoint d, GPoint e) {
+  GPoint pts[4] = {a, c, d, e};
+  GPathInfo info = { .num_points = 4, .points = pts };
+  GPath *path = gpath_create(&info);
+  if (!path) return;
+  gpath_draw_filled(ctx, path);
+  gpath_destroy(path);
 }
 
 static bool rects_overlap(GRect a, GRect c) {
@@ -212,14 +204,14 @@ static bool label_fits(GRect b, GRect box) {
   int cx = b.origin.x + b.size.w / 2, cy = b.origin.y + b.size.h / 2;
 #if defined(PBL_ROUND)
   // All four corners inside the circle, with a small margin.
-  int r = b.size.w / 2 - RAIN_EDGE - RAIN_DEPTH - 3;   // clear of the line
+  int r = b.size.w / 2 - RAIN_EDGE - RAIN_DEPTH - 3;   // clear of the bars
   for (int i = 0; i < 4; i++) {
     int x = box.origin.x + (i & 1 ? box.size.w : 0) - cx;
     int y = box.origin.y + (i & 2 ? box.size.h : 0) - cy;
     if (x * x + y * y > r * r) return false;
   }
 #else
-  const int m = RAIN_EDGE + RAIN_DEPTH + 2;            // clear of the line
+  const int m = RAIN_EDGE + RAIN_DEPTH + 2;            // clear of the bars
   if (box.origin.x < b.origin.x + m || box.origin.y < b.origin.y + m ||
       box.origin.x + box.size.w > b.origin.x + b.size.w - m ||
       box.origin.y + box.size.h > b.origin.y + b.size.h - m) return false;
@@ -249,7 +241,7 @@ static void draw_rain_label(GContext *ctx, GRect b, const Theme *th, time_t now,
     if (t < (time_t)g_wx.t0 + (time_t)k0 * 3600 || t > (time_t)g_wx.t0 + (time_t)(k1 + 1) * 3600) continue;
     if (t < now || t >= now + range_s) continue;
     int32_t f = frac_of(t, now, range_s);
-    for (int in = RAIN_EDGE + RAIN_DEPTH + 8; in <= RAIN_EDGE + RAIN_DEPTH + 32; in += 4) {
+    for (int in = RAIN_EDGE + bar_len(g_wx.precip[peak]) + 10; in <= RAIN_EDGE + RAIN_DEPTH + 34; in += 4) {
       GPoint p = track_pt(b, f, in);
       GRect box = GRect(p.x - 20, p.y - 7, 40, 14);
       if (!label_fits(b, box)) continue;
@@ -280,23 +272,37 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
     graphics_fill_circle(ctx, track_pt(b, f, TICK_IN), tm->tm_hour == 0 ? 2 : 1);
   }
 
-  // The rain line, all the way round.
-  graphics_context_set_stroke_width(ctx, RAIN_W);
-  GPoint prev = GPoint(0, 0);
-  for (int s = 0; s <= shown; s++) {
-    int32_t f = (int32_t)s * FRAC / steps;
-    time_t t = now + (time_t)s * range_s / steps;
-    bool likely;
-    GPoint p = track_pt(b, f, RAIN_EDGE + rain_depth(t, &likely));
-    if (s > 0) {
-      graphics_context_set_stroke_color(ctx, likely ? th->rain : th->rain_light);
-      graphics_draw_line(ctx, prev, p);
-    }
+  // A faint base line round the edge, so dry hours still read as "dry".
+  graphics_context_set_stroke_color(ctx, th->rain_light);
+  graphics_context_set_stroke_width(ctx, 1);
+  GPoint prev = track_pt(b, 0, RAIN_EDGE);
+  for (int s = 1; s <= shown; s++) {
+    GPoint p = track_pt(b, (int32_t)s * FRAC / steps, RAIN_EDGE);
+    graphics_draw_line(ctx, prev, p);
     prev = p;
   }
 
-  // Amount at the heaviest hour of each rain spell (up to 4 spells).
+  // One bar per hour, growing inward from the edge.
   int first = wx_index_at(now);
+  if (first >= 0) {
+    const int32_t gap = FRAC / range * 15 / 100;   // space between bars
+    for (int k = first; k < g_wx.count; k++) {
+      time_t h0 = (time_t)g_wx.t0 + (time_t)k * 3600, h1 = h0 + 3600;
+      if (h0 >= now + range_s) break;
+      int len = bar_len(g_wx.precip[k]);
+      if (!len) continue;
+      int32_t f0 = frac_of(h0 < now ? now : h0, now, range_s) + (h0 < now ? 0 : gap);
+      int32_t f1 = frac_of(h1 > now + range_s ? now + range_s : h1, now, range_s) - gap;
+      if (f1 <= f0) continue;
+      if (f1 * 1000 / FRAC > g_view.reveal) continue;
+      bool likely = g_wx.prob[k] == PROB_UNKNOWN || g_wx.prob[k] >= 50;
+      graphics_context_set_fill_color(ctx, likely ? th->rain : th->rain_light);
+      fill_quad(ctx, track_pt(b, f0, RAIN_EDGE), track_pt(b, f1, RAIN_EDGE),
+                track_pt(b, f1, RAIN_EDGE + len), track_pt(b, f0, RAIN_EDGE + len));
+    }
+  }
+
+  // Amount at the heaviest hour of each rain spell (up to 4 spells).
   if (first >= 0 && g_view.reveal >= 1000) {
     int labels = 0, peak = -1, k0 = -1;
     for (int k = first; k <= g_wx.count && labels < 4; k++) {
@@ -315,17 +321,15 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
     }
   }
 
-  // "Now" marker on the line, and the scroll cursor during a wrist flick.
-  bool likely;
-  GPoint now_p = track_pt(b, 0, RAIN_EDGE + rain_depth(now, &likely));
+  // "Now" marker on the base line, and the scroll cursor during a wrist flick.
+  GPoint now_p = track_pt(b, 0, RAIN_EDGE);
   graphics_context_set_fill_color(ctx, th->bg);
   graphics_fill_circle(ctx, now_p, 6);
   graphics_context_set_fill_color(ctx, th->fg);
   graphics_fill_circle(ctx, now_p, 4);
   if (g_view.scrub >= 0) {
     int32_t f = (int32_t)((int64_t)g_view.scrub * FRAC / (range * 10));
-    time_t t = now + (time_t)g_view.scrub * 360;
-    GPoint p = track_pt(b, f, RAIN_EDGE + rain_depth(t, &likely));
+    GPoint p = track_pt(b, f, RAIN_EDGE);
     graphics_context_set_fill_color(ctx, th->bg);
     graphics_fill_circle(ctx, p, 6);
     graphics_context_set_fill_color(ctx, th->accent);

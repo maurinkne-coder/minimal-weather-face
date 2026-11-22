@@ -88,3 +88,11 @@ GSize graphics_text_layout_get_content_size(const char *t, GFont f, GRect r, GTe
   int w = n * cw; if (w > r.size.w) w = r.size.w;
   return (GSize){(int16_t)w, (int16_t)h};
 }
+struct GPath { GPathInfo info; };
+GPath *gpath_create(const GPathInfo *info) { GPath *p = malloc(sizeof *p); p->info = *info; return p; }
+void gpath_destroy(GPath *p) { free(p); }
+void gpath_draw_filled(GContext *c, GPath *p) {
+  printf("[\"poly\",%d,[", c->fill.argb);
+  for (uint32_t i = 0; i < p->info.num_points; i++) printf("%s%d,%d", i ? "," : "", p->info.points[i].x, p->info.points[i].y);
+  printf("]]\n");
+}

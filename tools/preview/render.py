@@ -48,6 +48,9 @@ def render(log, w, h, round_, out):
                 ang = (a0 + (a1 - a0) * i / n) / 65536 * 2 * math.pi
                 pts.append((cx + math.sin(ang) * (R - t * S), cy - math.cos(ang) * (R - t * S)))
             d.polygon(pts, fill=col(a))
+        elif k == "poly":
+            _, a, pts = c
+            d.polygon([(pts[i] * S, pts[i + 1] * S) for i in range(0, len(pts), 2)], fill=col(a))
         elif k == "rotate":
             _, deg, a = c
             img = img.rotate(-deg, resample=Image.NEAREST, center=(w * S / 2, h * S / 2), fillcolor=col(a))

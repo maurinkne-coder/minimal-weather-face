@@ -78,3 +78,8 @@ void graphics_draw_line(GContext *c, GPoint a, GPoint b);
 void graphics_fill_radial(GContext *c, GRect r, GOvalScaleMode m, uint16_t inset, int32_t a0, int32_t a1);
 void graphics_draw_text(GContext *c, const char *t, GFont f, GRect r, GTextOverflowMode o, GTextAlignment a, void *attr);
 GSize graphics_text_layout_get_content_size(const char *t, GFont f, GRect r, GTextOverflowMode o, GTextAlignment a);
+typedef struct { uint32_t num_points; GPoint *points; } GPathInfo;
+typedef struct GPath GPath;
+GPath *gpath_create(const GPathInfo *info);
+void gpath_draw_filled(GContext *c, GPath *p);
+void gpath_destroy(GPath *p);

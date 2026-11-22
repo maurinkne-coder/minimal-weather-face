@@ -7,7 +7,7 @@ module.exports = [
   },
   {
     type: 'text',
-    defaultValue: 'The next hours of rain as one thin blue line around a big clock.'
+    defaultValue: 'The next hours of rain as a blue bar chart around a big clock.'
   },
 
   {
@@ -77,7 +77,7 @@ module.exports = [
         type: 'toggle',
         messageKey: 'Anim',
         label: 'Animations',
-        description: 'The line draws itself when the face opens; a wrist flick walks through the coming hours. Always off in Quiet Time and below 20% battery.',
+        description: 'The chart draws itself when the face opens; a wrist flick walks through the coming hours. Always off in Quiet Time and below 20% battery.',
         defaultValue: true
       }
     ]

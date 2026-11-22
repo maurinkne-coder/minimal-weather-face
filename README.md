@@ -1,7 +1,7 @@
 # Contour
 
-A minimal Pebble watchface: the next hours of rain drawn as one thin blue line
-around a big clock, like a contour line on a weather map. Built for Pebble Time 2
+A minimal Pebble watchface: the next hours of rain drawn as a
+blue bar chart around a big clock. Built for Pebble Time 2
 (`emery`) and Pebble Round 2 (`gabbro`).
 
 | Round 2 | Round 2, Daylight | Round 2, tilted 30° | Time 2 | Time 2, wrist flick |
@@ -13,14 +13,14 @@ fonts, so the lettering differs a little from the watch._
 
 ## How to read it
 
-- **One blue line** runs all the way round the edge, starting at the dot at the
-  top (now) and running clockwise. Round 2 shows 24 hours. On Time 2 you can
-  choose 12, 24 or 48 hours.
-- **Rain** bends the line inward: the deeper the bend, the more rain. It turns
-  full blue where rain is likely and stays pale where it's dry or rain is
-  unlikely. In Mono it's white and grey.
+- **A blue bar chart** runs all the way round the edge, one bar per hour,
+  starting at the dot at the top (now) and running clockwise. Round 2 shows
+  24 hours. On Time 2 you can choose 12, 24 or 48 hours.
+- **Bars** grow inward from a faint base line: the longer the bar, the more
+  rain (full length at 4 mm/h). Likely rain is full blue and unlikely rain is
+  pale. In Mono they're white and grey.
 - **Rain amounts**: each rain spell is labelled with its heaviest hour, like
-  `2.8 mm` (or `.11 in`), placed as close to the deepest point as fits beside
+  `2.8 mm` (or `.11 in`), placed as close to the longest bar as fits beside
   the text.
 - **Small dots** mark 00, 06, 12 and 18 o'clock. The midnight dot is bigger.
 - **Middle**: the date, the time in large Inter Light digits, the current temperature and sky, then a
@@ -79,7 +79,7 @@ which is why npm must be installed.
 | Path | What it does |
 |---|---|
 | `src/c/main.c` | Watch app: storage, messages from the phone, ticks, battery, health, animations |
-| `src/c/draw.c` | Draws the rain line, its labels and the text |
+| `src/c/draw.c` | Draws the rain bars, their labels and the text |
 | `src/c/tilt.c` | Turns the face when a tilt is set |
 | `src/c/text.c` | Translations, units, and the smart line |
 | `src/c/weather.c` | Small helpers for the stored forecast |
