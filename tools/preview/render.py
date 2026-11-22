@@ -90,6 +90,17 @@ def render(log, w, h, round_, out):
             _, deg, a = c
             img = img.rotate(-deg, resample=Image.NEAREST, center=(w * S / 2, h * S / 2), fillcolor=col(a))
             d = ImageDraw.Draw(img)
+        elif k == "digits":
+            _, s, cx, top, gap, a = c
+            plat = "gabbro" if round_ else "emery"
+            ims = [Image.open(os.path.join(HERE, "../../resources/images/digits", plat, ch + ".png")).convert("L") for ch in s]
+            total = sum(i.width for i in ims) + gap * (len(ims) - 1)
+            x = cx - total // 2
+            for im in ims:
+                mask = im.point(lambda v: 255 if v else 0).resize((im.width * S, im.height * S), Image.NEAREST)
+                img.paste(Image.new("RGB", mask.size, col(a)), (x * S, top * S), mask)
+                x += im.width + gap
+            d = ImageDraw.Draw(img)
         elif k == "text" and (c[2].startswith("clock") or c[2].startswith("small")):
             _, s, f, x, y, bw, bh, a = c[:8]
             size = int(f[5:])

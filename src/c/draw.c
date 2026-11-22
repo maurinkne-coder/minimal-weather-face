@@ -357,12 +357,12 @@ void draw_face(Layer *layer, GContext *ctx) {
   // middle line, hours above it and minutes below it as large as the screen
   // allows (the rounded digit corners reach into the rain chart), then the date on top and the extra line at
   // the bottom in small capitals of the same blocky font.
-  // CAP is the digit height; PAD is the space the font leaves above the digits
-  // inside its text box (both measured from the font at that size).
+  // CAP is the digit height (the height of the digit images), GAP the space
+  // between two digits.
 #ifdef PBL_ROUND
-  const int CAP = 74, PAD = 31, BOX = 112, MAX_W = 192, BAR_W = 166;
+  const int CAP = 74, GAP = 11, MAX_W = 192, BAR_W = 166;
 #else
-  const int CAP = 78, PAD = 32, BOX = 116, MAX_W = 160, BAR_W = 174;
+  const int CAP = 78, GAP = 12, MAX_W = 160, BAR_W = 174;
 #endif
   const int HALF = 15;                 // centre line to the digits
   const int SMALL_CAP = 9, SMALL_PAD = 4, SMALL_GAP = 6;
@@ -375,8 +375,8 @@ void draw_face(Layer *layer, GContext *ctx) {
   upper_utf8(corner);
   draw_text_font(ctx, date, g_small_font,
                  GRect(cx - 70, hh_top - SMALL_GAP - SMALL_CAP - SMALL_PAD, 140, 18), th.dim);
-  draw_text_font(ctx, hh, g_time_font, GRect(b.origin.x, hh_top - PAD, b.size.w, BOX), th.fg);
-  draw_text_font(ctx, mm, g_time_font, GRect(b.origin.x, mm_top - PAD, b.size.w, BOX), th.fg);
+  digits_draw(ctx, hh, cx, hh_top, GAP, th.fg);
+  digits_draw(ctx, mm, cx, mm_top, GAP, th.fg);
   const int corner_y = mm_top + CAP + SMALL_GAP - SMALL_PAD;
   if (g_set.corner == CORNER_TEMP) {
     // Today's low, now and high: the current temperature bright in the middle.

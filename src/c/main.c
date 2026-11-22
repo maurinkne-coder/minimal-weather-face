@@ -3,7 +3,6 @@
 Settings g_set;
 Weather g_wx;
 ViewState g_view;
-GFont g_time_font;
 GFont g_small_font;
 
 static Window *s_window;
@@ -370,11 +369,7 @@ static void canvas_update(Layer *layer, GContext *ctx) {
 }
 
 static void window_load(Window *window) {
-#ifdef PBL_ROUND
-  g_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CLOCK_103));
-#else
-  g_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CLOCK_108));
-#endif
+  digits_load();
   g_small_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_SMALL_12));
   Layer *root = window_get_root_layer(window);
   s_canvas = layer_create(layer_get_bounds(root));
@@ -387,7 +382,7 @@ static void window_unload(Window *window) {
   tilt_release();
   layer_destroy(s_canvas);
   s_canvas = NULL;
-  fonts_unload_custom_font(g_time_font);
+  digits_unload();
   fonts_unload_custom_font(g_small_font);
 }
 

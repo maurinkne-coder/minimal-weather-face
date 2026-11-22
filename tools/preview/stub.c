@@ -3,11 +3,6 @@
 #include "../../src/c/contour.h"
 
 Settings g_set; Weather g_wx; ViewState g_view;
-#ifdef PBL_ROUND
-GFont g_time_font = "clock103";
-#else
-GFont g_time_font = "clock108";
-#endif
 GFont g_small_font = "small12";
 static int W, H;
 struct Layer { int dummy; };
@@ -105,4 +100,10 @@ void gpath_draw_outline(GContext *c, GPath *p) {
   printf("[\"polyline\",%d,[", c->stroke.argb);
   for (uint32_t i = 0; i < p->info.num_points; i++) printf("%s%d,%d", i ? "," : "", p->info.points[i].x, p->info.points[i].y);
   printf("]]\n");
+}
+
+// The big digits are images on the watch; here they are logged and drawn by render.py.
+void digits_draw(GContext *c, const char *s, int cx, int top, int gap, GColor color) {
+  (void)c;
+  printf("[\"digits\","); jstr(s); printf(",%d,%d,%d,%d]\n", cx, top, gap, color.argb);
 }
