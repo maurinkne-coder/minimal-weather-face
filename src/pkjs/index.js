@@ -1,5 +1,5 @@
 // Phone side: settings page, location, and the Open-Meteo forecast.
-var Clay = require('pebble-clay');
+var Clay = require('./vendor/pebble-clay');
 var clayConfig = require('./config');
 var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
 

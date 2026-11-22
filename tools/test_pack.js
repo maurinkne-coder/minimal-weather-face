@@ -2,7 +2,7 @@
 var Module = require('module');
 var orig = Module._load;
 Module._load = function (req) {
-  if (req === 'pebble-clay') return function () { this.generateUrl = function () {}; this.getSettings = function () {}; };
+  if (req === 'message_keys') return {}; // the Pebble SDK provides this to the vendored Clay
   return orig.apply(this, arguments);
 };
 global.Pebble = { addEventListener: function () {}, sendAppMessage: function () {} };
