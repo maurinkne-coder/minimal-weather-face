@@ -25,59 +25,49 @@ for r in f["name"].names:
         r.string = r.toUnicode() + " Modified for Contour (plain zero)."
 f.save(dst)
 
-# The 8 gets a clear waist: a round notch on both sides at the middle bar.
+# The 8 is drawn from scratch to Maurin's description: two very heavy, wide,
+# rounded-rectangle loops fused into one broad block with flat top and bottom,
+# heavily rounded outer corners, a small sharp V notch on each side at the
+# middle, and two equal, very thin, wide slot counters with small chamfers.
 from fontTools.pens.ttGlyphPen import TTGlyphPen
-from fontTools.pens.recordingPen import DecomposingRecordingPen
 
 f = TTFont(dst)
-gs = f.getGlyphSet()
-rec = DecomposingRecordingPen(gs)
-gs["eight"].draw(rec)
-coords, ends, flags = f["glyf"]["eight"].getCoordinates(f["glyf"])
-# A smooth dip: the side runs straight into the notch and out again with no
-# corner (TrueType quadratic curves, tangent stays vertical at both ends).
-# A short square notch with softly rounded corners, cut into the middle bar.
-M, W, D, R = 365, 42, 52, 18  # middle, half height, depth, corner radius
-def dip(x, k):  # k = +1 on the left side, -1 on the right side
-    i = x + k * D
-    pts = [((x, M - W - R), 1), ((x, M - W), 0), ((x + k * R, M - W), 1),
-           ((i - k * R, M - W), 1), ((i, M - W), 0), ((i, M - W + R), 1),
-           ((i, M + W - R), 1), ((i, M + W), 0), ((i - k * R, M + W), 1),
-           ((x + k * R, M + W), 1), ((x, M + W), 0), ((x, M + W + R), 1)]
-    return pts
-outer = [((x, y), fl & 1) for (x, y), fl in zip(list(coords)[:ends[0] + 1], list(flags)[:ends[0] + 1])]
-left = [((57, 145), 1)] + dip(57, 1) + [((57, 575), 1)]
-right = [((764, 601), 1)] + list(reversed(dip(764, -1))) + [((764, 145), 1)]
-new = []
-skip = None
-for pt in outer:
-    if pt[0] == (57, 145):
-        new += left; skip = (57, 575); continue
-    if pt[0] == (764, 601):
-        new += right; skip = (764, 145); continue
-    if skip:
-        if pt[0] == skip: skip = None
-        continue
-    new.append(pt)
-pen = TTGlyphPen(gs)
-def contour(pts):
-    # TrueType quadratic contour from on/off points
-    start = pts[0][0]
-    pen.moveTo(start)
-    offs = []
-    for p, on in pts[1:]:
-        if on:
-            if offs: pen.qCurveTo(*offs, p); offs = []
-            else: pen.lineTo(p)
-        else:
-            offs.append(p)
-    if offs: pen.qCurveTo(*offs, start)
+X0, X1, Y0, Y1 = 57, 764, 0, 720       # same box as the other digits
+RC = 150                               # outer corner radius
+MID, VN, VD = 360, 34, 44              # notch: middle, half height, depth
+SH, SX0, SX1, CH = 80, 230, 591, 14    # slot height, slot x range, chamfer
+WALL = (Y1 - Y0 - 2 * SH) // 3         # equal top, middle and bottom bars
+
+pen = TTGlyphPen(None)
+# Outer shape, clockwise.
+pen.moveTo((X1 - RC, Y0))
+pen.lineTo((X0 + RC, Y0))
+pen.qCurveTo((X0, Y0), (X0, Y0 + RC))
+pen.lineTo((X0, MID - VN))
+pen.lineTo((X0 + VD, MID))
+pen.lineTo((X0, MID + VN))
+pen.lineTo((X0, Y1 - RC))
+pen.qCurveTo((X0, Y1), (X0 + RC, Y1))
+pen.lineTo((X1 - RC, Y1))
+pen.qCurveTo((X1, Y1), (X1, Y1 - RC))
+pen.lineTo((X1, MID + VN))
+pen.lineTo((X1 - VD, MID))
+pen.lineTo((X1, MID - VN))
+pen.lineTo((X1, Y0 + RC))
+pen.qCurveTo((X1, Y0), (X1 - RC, Y0))
+pen.closePath()
+# Two slot counters, anticlockwise.
+for yb in (Y0 + WALL, Y1 - WALL - SH):
+    yt = yb + SH
+    pen.moveTo((SX0 + CH, yb))
+    pen.lineTo((SX1 - CH, yb))
+    pen.lineTo((SX1, yb + CH))
+    pen.lineTo((SX1, yt - CH))
+    pen.lineTo((SX1 - CH, yt))
+    pen.lineTo((SX0 + CH, yt))
+    pen.lineTo((SX0, yt - CH))
+    pen.lineTo((SX0, yb + CH))
     pen.closePath()
-contour(new)
-s = ends[0] + 1
-for e in ends[1:]:
-    contour([((x, y), fl & 1) for (x, y), fl in zip(list(coords)[s:e + 1], list(flags)[s:e + 1])])
-    s = e + 1
 f["glyf"]["eight"] = pen.glyph()
 f.save(dst)
 
@@ -88,7 +78,7 @@ CORNER = 70  # radius in font units (capped at 45% of each edge)
 
 f = TTFont(dst)
 glyf = f["glyf"]
-for name in ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]:
+for name in ["zero", "one", "two", "three", "four", "five", "six", "seven", "nine"]:  # the 8 is drawn above
     g = glyf[name]
     if g.isComposite():
         continue
