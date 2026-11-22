@@ -14,6 +14,8 @@ GRect grect_inset(GRect r, GEdgeInsets i) { return GRect(r.origin.x + i.left, r.
 GRect layer_get_bounds(Layer *l) { (void)l; return GRect(0, 0, W, H); }
 GFont fonts_get_system_font(const char *k) { return k; }
 bool clock_is_24h_style(void) { return true; }
+bool quiet_time_is_active(void) { return getenv("QUIET") != NULL; }
+bool connection_service_peek_pebble_app_connection(void) { return getenv("NOPHONE") == NULL; }
 void graphics_context_set_fill_color(GContext *c, GColor col) { c->fill = col; }
 void graphics_context_set_stroke_color(GContext *c, GColor col) { c->stroke = col; }
 void graphics_context_set_text_color(GContext *c, GColor col) { c->text = col; }
@@ -40,7 +42,7 @@ static void fake(time_t now, int scenario) {
     double base = scenario == 1 ? -2 : (scenario == 2 ? 24 : 7);
     g_wx.temp[i] = (int16_t)lround((base + 7 * sin((h - 9) / 24.0 * 2 * M_PI)) * 10);
     g_wx.day[i] = h >= 7 && h < 17;
-    g_wx.code[i] = 2; g_wx.prob[i] = 10; g_wx.gust[i] = 20; g_wx.uv[i] = g_wx.day[i] ? 20 : 0;
+    g_wx.code[i] = 2; g_wx.prob[i] = 10; g_wx.gust[i] = 20; g_wx.winddir[i] = 110; g_wx.uv[i] = g_wx.day[i] ? 20 : 0;
     if (i >= 3 && i <= 7) { g_wx.precip[i] = (uint8_t)(i == 5 ? 90 : i * 4); g_wx.prob[i] = 80; g_wx.code[i] = scenario == 1 ? 73 : 61; }
     if (i == 6 && scenario != 1) { g_wx.precip[i] = 60; g_wx.code[i] = 95; }  // thunderstorm
     if (i == 7 && scenario != 1) g_wx.precip[i] = 254;  // extreme
@@ -67,11 +69,12 @@ int main(int argc, char **argv) {
   time_t now = timegm(&tm);
   g_set = (Settings){ .version = 1, .theme = atoi(argv[3]), .range = atoi(argv[6]), .corner = atoi(argv[7]),
     .anim = 1, .frost = 1, .gust = 50, .uv = 6, .sunline = 1, .lang = atoi(argv[4]), .clock = 0,
-    .updates = 1, .interval = 30, .battline = (uint8_t)(atoi(argv[3]) == 1 ? 2 : 1), .stepbar = 1, .stepgoal = 10000, .tilt = (int16_t)(argc > 10 ? atoi(argv[10]) : 0), .barslot = (uint8_t)(getenv("SLOT") ? atoi(getenv("SLOT")) : 30) };
+    .updates = 1, .interval = 30, .battline = (uint8_t)(atoi(argv[3]) == 1 ? 2 : 1), .stepbar = 1, .stepgoal = 10000, .tilt = (int16_t)(argc > 10 ? atoi(argv[10]) : 0), .barslot = (uint8_t)(getenv("SLOT") ? atoi(getenv("SLOT")) : 30),
+    .symleft = (uint8_t)(getenv("SYML") ? atoi(getenv("SYML")) : SYM_WEATHER), .symright = (uint8_t)(getenv("SYMR") ? atoi(getenv("SYMR")) : SYM_RAIN) };
   if (argc > 11) { g_set.owncolors = 1; g_set.textcolor = (uint8_t)strtol(argv[11], NULL, 16); g_set.accentcolor = (uint8_t)strtol(argv[12], NULL, 16); }
   fake(now, atoi(argv[5]));
   bool scenario0 = atoi(argv[5]) == 0;
-  g_view = (ViewState){ .now = now, .reveal = 1000, .scrub = atoi(argv[8]), .battery = 80, .charging = scenario0, .steps = 6214, .heart = 64, .step_goal = 10000, .charge_anim = getenv("CHARGE") ? atoi(getenv("CHARGE")) : -1 };
+  g_view = (ViewState){ .now = now, .reveal = 1000, .scrub = atoi(argv[8]), .battery = 80, .charging = scenario0 && !getenv("NOCHARGE"), .steps = 6214, .heart = getenv("HEART") ? atoi(getenv("HEART")) : 64, .step_goal = 10000, .charge_anim = getenv("CHARGE") ? atoi(getenv("CHARGE")) : -1 };
   struct GContext ctx = {0}; Layer l;
   draw_face(&l, &ctx);
   return 0;

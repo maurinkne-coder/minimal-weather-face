@@ -105,3 +105,113 @@ void icon_bolt(GContext *ctx, GPoint c, GColor col) {
   graphics_context_set_antialiased(ctx, true);
   bolt(ctx, c.x, c.y, col);
 }
+
+// ---- Symbols for the sides of the middle text ----
+
+static void path(GContext *ctx, GPoint *pts, int n, bool filled, GColor c) {
+  GPathInfo info = { .num_points = (uint32_t)n, .points = pts };
+  GPath *p = gpath_create(&info);
+  if (!p) return;
+  if (filled) {
+    graphics_context_set_fill_color(ctx, c);
+    gpath_draw_filled(ctx, p);
+  } else {
+    graphics_context_set_stroke_color(ctx, c);
+    graphics_context_set_stroke_width(ctx, 1);
+    gpath_draw_outline(ctx, p);
+  }
+  gpath_destroy(p);
+}
+
+// Rain chance: a droplet outline that fills from the bottom, 0..100 %.
+void icon_drop(GContext *ctx, GPoint c, int level, GColor water, GColor bg) {
+  graphics_context_set_antialiased(ctx, true);
+  GPoint pts[12];
+  int n = 0;
+  pts[n++] = GPoint(c.x, c.y - 7);                    // the tip
+  for (int deg = 40; deg <= 320; deg += 28) {         // round bottom, r 4.5 round (x, y+2)
+    int32_t a = DEG_TO_TRIGANGLE(deg);
+    pts[n++] = GPoint(c.x + sin_lookup(a) * 9 / 2 / TRIG_MAX_RATIO,
+                      c.y + 2 - cos_lookup(a) * 9 / 2 / TRIG_MAX_RATIO);
+  }
+  if (level < 0) level = 0;
+  if (level > 100) level = 100;
+  if (level > 0) {
+    path(ctx, pts, n, true, water);
+    int top = c.y - 7, bottom = c.y + 7;
+    int cut = bottom - (bottom - top) * level / 100;  // rows above this stay empty
+    if (cut > top) {
+      graphics_context_set_fill_color(ctx, bg);
+      graphics_fill_rect(ctx, GRect(c.x - 6, top - 1, 13, cut - top + 1), 0, GCornerNone);
+    }
+  }
+  path(ctx, pts, n, false, water);
+}
+
+// Phone disconnected: a phone outline with a slash through it.
+void icon_phone_off(GContext *ctx, GPoint c, GColor col, GColor slash, GColor bg) {
+  graphics_context_set_antialiased(ctx, true);
+  line(ctx, c.x - 3, c.y - 6, c.x + 3, c.y - 6, 1, col);
+  line(ctx, c.x - 3, c.y + 6, c.x + 3, c.y + 6, 1, col);
+  line(ctx, c.x - 3, c.y - 6, c.x - 3, c.y + 6, 1, col);
+  line(ctx, c.x + 3, c.y - 6, c.x + 3, c.y + 6, 1, col);
+  line(ctx, c.x - 1, c.y + 4, c.x + 1, c.y + 4, 1, col);      // home button
+  line(ctx, c.x - 6, c.y + 5, c.x + 6, c.y - 5, 4, bg);       // gap round the slash
+  line(ctx, c.x - 6, c.y + 5, c.x + 6, c.y - 5, 2, slash);
+}
+
+// Quiet Time: a crescent moon with a small z.
+void icon_quiet(GContext *ctx, GPoint c, GColor col, GColor bg) {
+  graphics_context_set_antialiased(ctx, true);
+  moon(ctx, c.x - 2, c.y + 1, 5, col, bg);
+  line(ctx, c.x + 2, c.y - 6, c.x + 6, c.y - 6, 1, col);
+  line(ctx, c.x + 6, c.y - 6, c.x + 2, c.y - 2, 1, col);
+  line(ctx, c.x + 2, c.y - 2, c.x + 6, c.y - 2, 1, col);
+}
+
+// Wind: an arrow pointing the way the wind blows, `deg` clockwise from up.
+void icon_arrow(GContext *ctx, GPoint c, int deg, GColor col) {
+  graphics_context_set_antialiased(ctx, true);
+  static const int8_t A[7][2] = { {0, -7}, {5, -1}, {1, -1}, {1, 7}, {-1, 7}, {-1, -1}, {-5, -1} };
+  int32_t a = DEG_TO_TRIGANGLE(((deg % 360) + 360) % 360);
+  int32_t sn = sin_lookup(a), cs = cos_lookup(a);
+  GPoint pts[7];
+  for (int i = 0; i < 7; i++) {
+    int x = A[i][0], y = A[i][1];
+    pts[i] = GPoint(c.x + (x * cs - y * sn) / TRIG_MAX_RATIO, c.y + (x * sn + y * cs) / TRIG_MAX_RATIO);
+  }
+  path(ctx, pts, 7, true, col);
+}
+
+// Moon phase: a disc, lit part in `lit`, dark part in `dark`. `phase` runs
+// 0..1000 through the month: 0 new, 250 first quarter, 500 full, 750 last.
+void icon_moon_phase(GContext *ctx, GPoint c, int phase, GColor lit, GColor dark) {
+  const int r = 5;
+  bool waxing = phase < 500;
+  int32_t a = DEG_TO_TRIGANGLE((waxing ? phase : phase - 500) * 360 / 1000);
+  int32_t k = cos_lookup(a);                          // terminator, -1..1 of the half width
+  for (int dy = -r; dy <= r; dy++) {
+    for (int dx = -r; dx <= r; dx++) {
+      int d2 = dx * dx + dy * dy;
+      if (d2 > r * r + r) continue;
+      int w2 = r * r + r - dy * dy;                   // squared half width of this row
+      int w = 0;
+      while ((w + 1) * (w + 1) <= w2) w++;
+      int32_t t = k * w / TRIG_MAX_RATIO;
+      bool on = waxing ? dx > t : dx < t;
+      graphics_context_set_fill_color(ctx, on ? lit : dark);
+      graphics_fill_rect(ctx, GRect(c.x + dx, c.y + dy, 1, 1), 0, GCornerNone);
+    }
+  }
+}
+
+// Heart rate: a heart outline, filled when `filled`.
+void icon_heart(GContext *ctx, GPoint c, bool filled, GColor col) {
+  graphics_context_set_antialiased(ctx, true);
+  static const int8_t H[10][2] = { {0, -3}, {-2, -5}, {-4, -5}, {-6, -3}, {-6, -1},
+                                   {0, 5}, {6, -1}, {6, -3}, {4, -5}, {2, -5} };
+  GPoint pts[10];
+  for (int i = 0; i < 10; i++) pts[i] = GPoint(c.x + H[i][0], c.y + H[i][1]);
+  if (filled) path(ctx, pts, 10, true, col);
+  path(ctx, pts, 10, false, col);
+}

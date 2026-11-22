@@ -12,13 +12,13 @@ var DEFAULTS = {
   Frost: true, Gust: '50', Uv: '6', SunLine: true,
   Lang: '0', Clock: '0', TempUnit: '0', RainUnit: '0', WindUnit: '0',
   Updates: true, Interval: '30', Tilt: '0', BattLine: '1', StepBar: true, StepGoal: '10000', StepColor: '0', RainAlert: '0',
-  OwnColors: false, TextColor: 'FFFFFF', AccentColor: '55FFFF', ChargeBuzz: true, BarSlot: '30', Model: 'best_match', LocMode: 'gps', City: ''
+  OwnColors: false, TextColor: 'FFFFFF', AccentColor: '55FFFF', ChargeBuzz: true, Buzz80: '3', BuzzFull: '5', BarSlot: '30', SymLeft: '1', SymRight: '2', Model: 'best_match', LocMode: 'gps', City: ''
 };
 
 var WATCH_KEYS = ['Theme', 'Range', 'Corner', 'Anim', 'Frost', 'Gust', 'Uv', 'SunLine',
                   'Lang', 'Clock', 'TempUnit', 'RainUnit', 'WindUnit', 'Updates', 'Interval', 'Tilt',
                   'BattLine', 'StepBar', 'StepGoal', 'StepColor', 'RainAlert',
-                  'OwnColors', 'TextColor', 'AccentColor', 'ChargeBuzz', 'BarSlot'];
+                  'OwnColors', 'TextColor', 'AccentColor', 'ChargeBuzz', 'Buzz80', 'BuzzFull', 'BarSlot', 'SymLeft', 'SymRight'];
 
 // ---------------------------------------------------------------------------
 // Settings
@@ -158,7 +158,7 @@ function forecastUrl(loc, model) {
   return 'https://api.open-meteo.com/v1/forecast' +
     '?latitude=' + loc.lat.toFixed(3) + '&longitude=' + loc.lon.toFixed(3) +
     '&current=temperature_2m,weather_code' +
-    '&hourly=temperature_2m,precipitation,precipitation_probability,weather_code,wind_gusts_10m,uv_index,is_day' +
+    '&hourly=temperature_2m,precipitation,precipitation_probability,weather_code,wind_gusts_10m,wind_direction_10m,uv_index,is_day' +
     '&minutely_15=precipitation' +
     '&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min' +
     '&timezone=auto&timeformat=unixtime&forecast_days=5' +
@@ -171,7 +171,7 @@ function pack(j) {
   var s = startIndex(h.time, now);
   var end = Math.min(h.time.length, s + HOURS);
 
-  var temp = [], precip = [], prob = [], code = [], gust = [], uv = [], day = [];
+  var temp = [], precip = [], prob = [], code = [], gust = [], dir = [], uv = [], day = [];
   for (var i = s; i < end; i++) {
     var t = h.temperature_2m[i];
     if (t === null || t === undefined) break; // model ran out of hours
@@ -182,6 +182,8 @@ function pack(j) {
     prob.push(p === null || p === undefined ? 255 : clamp(Math.round(p), 0, 100));
     code.push(clamp(num(h.weather_code[i], 3), 0, 99));
     gust.push(clamp(Math.round(num(h.wind_gusts_10m[i], 0)), 0, 254));
+    var wd = h.wind_direction_10m ? h.wind_direction_10m[i] : null;
+    dir.push(wd === null || wd === undefined ? 255 : clamp(Math.round(wd / 2) % 180, 0, 179));
     uv.push(clamp(Math.round(num(h.uv_index ? h.uv_index[i] : 0, 0) * 10), 0, 254));
     day.push(num(h.is_day[i], 1) ? 1 : 0);
   }
@@ -190,7 +192,7 @@ function pack(j) {
   var dict = {
     WxT0: h.time[s],
     WxTemp: temp, WxPrecip: precip, WxProb: prob, WxCode: code,
-    WxGust: gust, WxUv: uv, WxDay: day
+    WxGust: gust, WxWindDir: dir, WxUv: uv, WxDay: day
   };
 
   var m = j.minutely_15;

@@ -361,6 +361,69 @@ static void upper_utf8(char *s) {
 
 // Everything except the forecast ring: date, clock, info row, lines and
 // the bottom line. Drawn on top of the ring.
+// ---- Symbols beside the middle text ----
+
+#define SYM_BOLT SYM_COUNT  // the charging bolt, never picked in the settings
+
+// Moon phase 0..1000 (0 new, 500 full), from the mean length of a lunar
+// month counted from the new moon of 6 January 2000, 18:14 UTC.
+static int moon_phase(time_t now) {
+  const int32_t month = 2551443;  // seconds
+  int32_t t = (int32_t)((now - 947182440) % month);
+  if (t < 0) t += month;
+  return (int)((int64_t)t * 1000 / month);
+}
+
+// Chance of rain in % for the hour now, or -1 when there is no forecast.
+static int rain_chance(int wi) {
+  if (wi < 0) return -1;
+  if (g_wx.prob[wi] != PROB_UNKNOWN) return g_wx.prob[wi];
+  return g_wx.precip[wi] ? 100 : 0;  // model without chances: rain or not
+}
+
+static bool symbol_shown(int kind, time_t now, int wi, bool fresh) {
+  switch (kind) {
+    case SYM_WEATHER: return fresh || wi >= 0;
+    case SYM_RAIN: return wi >= 0;
+    case SYM_PHONE: return !connection_service_peek_pebble_app_connection();
+    case SYM_QUIET: return quiet_time_is_active();
+    case SYM_WIND: return wi >= 0 && g_wx.winddir[wi] != 255;
+    case SYM_MOON: return true;
+    case SYM_HEART: return g_view.heart > 0;
+    case SYM_BOLT: return true;
+    default: return false;
+  }
+}
+
+static void draw_symbol(GContext *ctx, const Theme *th, int kind, GPoint c, time_t now, int wi,
+                        bool fresh) {
+  bool mono = g_set.theme == THEME_MONO;
+  GColor warm = mono ? th->fg : light_bg(th) ? GColorOrange : GColorChromeYellow;
+  GColor water = mono ? th->fg : th->medium;
+  GColor alarm = mono ? th->fg : GColorRed;
+  switch (kind) {
+    case SYM_WEATHER: {
+      IconColors k = { .cloud = th->fg, .sun = warm, .water = water, .bg = th->bg };
+      uint8_t code = fresh ? g_wx.cur_code : g_wx.code[wi];
+      icon_weather(ctx, c, code, is_daytime(now), &k);
+      break;
+    }
+    case SYM_RAIN: icon_drop(ctx, c, rain_chance(wi), water, th->bg); break;
+    case SYM_PHONE: icon_phone_off(ctx, c, th->fg, alarm, th->bg); break;
+    case SYM_QUIET: icon_quiet(ctx, c, th->fg, th->bg); break;
+    case SYM_WIND: {
+      bool gusty = g_set.gust && g_wx.gust[wi] >= g_set.gust;
+      // The forecast gives where the wind comes from; the arrow shows where it goes.
+      icon_arrow(ctx, c, g_wx.winddir[wi] * 2 + 180, gusty ? th->accent : th->fg);
+      break;
+    }
+    case SYM_MOON: icon_moon_phase(ctx, c, moon_phase(now), th->fg, th->dim); break;
+    case SYM_HEART: icon_heart(ctx, c, g_view.heart > 100, mono ? th->fg : g_view.heart > 100 ? GColorRed : th->fg); break;
+    case SYM_BOLT: icon_bolt(ctx, c, warm); break;
+  }
+}
+
+
 static void draw_text_layer(GContext *ctx, GRect b, const Theme *thp, time_t now) {
   const Theme th = *thp;
   char hh[4], mm[4], date[16], left[40], right[64], corner[24];
@@ -463,16 +526,15 @@ static void draw_text_layer(GContext *ctx, GRect b, const Theme *thp, time_t now
   }
 
   // Info row: temperature in the main colour, then the smart line in the
-  // accent colour. Both use the same font so they share one baseline. The
-  // weather symbol sits left of the text and, while charging, a lightning
-  // bolt right of it, both centred between the two lines.
+  // accent colour. Both use the same font so they share one baseline. A
+  // symbol picked in the settings sits on each side, centred between the two
+  // lines; while charging a lightning bolt takes the right one's place.
   {
-    bool mono = g_set.theme == THEME_MONO;
-    GColor warm = mono ? th.fg : light_bg(&th) ? GColorOrange : GColorChromeYellow;
     int wi = wx_index_at(now);
     bool fresh = g_wx.cur_t && now - (time_t)g_wx.cur_t < 75 * 60;
-    bool has_wx = fresh || wi >= 0;
-    bool has_bolt = g_view.charging;
+    int kl = g_set.symleft, kr = g_view.charging ? SYM_BOLT : g_set.symright;
+    bool has_wx = symbol_shown(kl, now, wi, fresh);
+    bool has_bolt = symbol_shown(kr, now, wi, fresh);
     // With symbols the row may run a little wider (over the ring, which it
     // covers anyway); the text leaves 20 px on each side for them.
     const int ICON_HALF = 7, ICON_GAP = 6;
@@ -510,12 +572,8 @@ static void draw_text_layer(GContext *ctx, GRect b, const Theme *thp, time_t now
     // Middle of the 22 px between the lines (cy-11 .. cy+10).
     const int icon_y = cy - 1;
     const int text_w = wl + gap + wr;
-    if (has_wx) {
-      IconColors k = { .cloud = th.fg, .sun = warm, .water = mono ? th.fg : th.medium, .bg = th.bg };
-      uint8_t code = fresh ? g_wx.cur_code : g_wx.code[wi];
-      icon_weather(ctx, GPoint(x0 - ICON_GAP - ICON_HALF, icon_y), code, is_daytime(now), &k);
-    }
-    if (has_bolt) icon_bolt(ctx, GPoint(x0 + text_w + ICON_GAP + ICON_HALF, icon_y), warm);
+    if (has_wx) draw_symbol(ctx, &th, kl, GPoint(x0 - ICON_GAP - ICON_HALF, icon_y), now, wi, fresh);
+    if (has_bolt) draw_symbol(ctx, &th, kr, GPoint(x0 + text_w + ICON_GAP + ICON_HALF, icon_y), now, wi, fresh);
   }
 
 }

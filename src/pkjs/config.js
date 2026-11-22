@@ -89,6 +89,39 @@ module.exports = [
       },
       {
         type: 'select',
+        messageKey: 'SymLeft',
+        label: 'Symbol left of the middle text',
+        defaultValue: '1',
+        options: [
+          { label: 'Off', value: '0' },
+          { label: 'Weather now (sun, clouds, rain, snow…)', value: '1' },
+          { label: 'Rain chance (droplet fills up)', value: '2' },
+          { label: 'Phone disconnected (only when it is)', value: '3' },
+          { label: 'Quiet Time (only when it is on)', value: '4' },
+          { label: 'Wind direction (arrow, highlighted in strong gusts)', value: '5' },
+          { label: 'Moon phase', value: '6' },
+          { label: 'Heart rate (red when above 100 bpm)', value: '7' }
+        ]
+      },
+      {
+        type: 'select',
+        messageKey: 'SymRight',
+        label: 'Symbol right of the middle text',
+        description: 'While the watch charges, a lightning bolt takes this place.',
+        defaultValue: '2',
+        options: [
+          { label: 'Off', value: '0' },
+          { label: 'Weather now (sun, clouds, rain, snow…)', value: '1' },
+          { label: 'Rain chance (droplet fills up)', value: '2' },
+          { label: 'Phone disconnected (only when it is)', value: '3' },
+          { label: 'Quiet Time (only when it is on)', value: '4' },
+          { label: 'Wind direction (arrow, highlighted in strong gusts)', value: '5' },
+          { label: 'Moon phase', value: '6' },
+          { label: 'Heart rate (red when above 100 bpm)', value: '7' }
+        ]
+      },
+      {
+        type: 'select',
         messageKey: 'BarSlot',
         label: 'Rain bar resolution',
         description: 'How much time each rain bar covers. Shorter bars show more detail in the next two hours, where a 15-minute forecast is available.',
@@ -171,8 +204,46 @@ module.exports = [
         type: 'toggle',
         messageKey: 'ChargeBuzz',
         label: 'Charging buzz',
-        description: 'A short buzz when you plug the watch in, a double buzz at 80% and a long one when it is full. A lightning bolt shows while it charges. Silent in Quiet Time.',
+        description: 'Buzzes when you plug the watch in, at 80% and when it is full. The charging animation and lightning bolt show either way. Silent in Quiet Time.',
         defaultValue: true
+      },
+      {
+        type: 'select',
+        messageKey: 'Buzz80',
+        label: 'Buzzes at 80%',
+        defaultValue: '3',
+        options: [
+          { label: 'Off', value: '0' },
+          { label: '1 buzz', value: '1' },
+          { label: '2 buzzes', value: '2' },
+          { label: '3 buzzes', value: '3' },
+          { label: '4 buzzes', value: '4' },
+          { label: '5 buzzes', value: '5' },
+          { label: '6 buzzes', value: '6' },
+          { label: '7 buzzes', value: '7' },
+          { label: '8 buzzes', value: '8' },
+          { label: '9 buzzes', value: '9' },
+          { label: '10 buzzes', value: '10' }
+        ]
+      },
+      {
+        type: 'select',
+        messageKey: 'BuzzFull',
+        label: 'Buzzes when full',
+        defaultValue: '5',
+        options: [
+          { label: 'Off', value: '0' },
+          { label: '1 buzz', value: '1' },
+          { label: '2 buzzes', value: '2' },
+          { label: '3 buzzes', value: '3' },
+          { label: '4 buzzes', value: '4' },
+          { label: '5 buzzes', value: '5' },
+          { label: '6 buzzes', value: '6' },
+          { label: '7 buzzes', value: '7' },
+          { label: '8 buzzes', value: '8' },
+          { label: '9 buzzes', value: '9' },
+          { label: '10 buzzes', value: '10' }
+        ]
       },
       {
         type: 'toggle',

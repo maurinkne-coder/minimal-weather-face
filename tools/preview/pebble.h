@@ -97,3 +97,5 @@ GPath *gpath_create(const GPathInfo *info);
 void gpath_draw_filled(GContext *c, GPath *p);
 void gpath_draw_outline(GContext *c, GPath *p);
 void gpath_destroy(GPath *p);
+bool quiet_time_is_active(void);
+bool connection_service_peek_pebble_app_connection(void);

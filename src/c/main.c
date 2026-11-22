@@ -50,6 +50,10 @@ static void settings_default(void) {
     .accentcolor = 0xFF,  // white until picked
     .chargebuzz = 1,
     .barslot = 30,
+    .symleft = SYM_WEATHER,
+    .symright = SYM_RAIN,
+    .buzz80 = 3,
+    .buzzfull = 5,
   };
 }
 
@@ -60,9 +64,13 @@ static void settings_load(void) {
     Settings s = g_set;  // fields an older version did not have keep their defaults
     persist_read_data(P_SETTINGS, &s, size);
     if (s.version == 5) {
-      // Version 6 only added chargebuzz and barslot at the end.
+      // Version 6 only added fields at the end.
       s.chargebuzz = 1;
       s.barslot = 30;
+      s.symleft = SYM_WEATHER;
+      s.symright = SYM_RAIN;
+      s.buzz80 = 3;
+      s.buzzfull = 5;
       s.version = SETTINGS_VERSION;
     }
     if (s.version == SETTINGS_VERSION) g_set = s;
@@ -123,16 +131,25 @@ static void update_health(void) {
     }
     if (g_view.step_goal <= 0) g_view.step_goal = 10000;
   }
-  if (g_set.corner == CORNER_HEART) {
+  if (g_set.corner == CORNER_HEART || g_set.symleft == SYM_HEART || g_set.symright == SYM_HEART) {
     g_view.heart = (int32_t)health_service_peek_current_value(HealthMetricHeartRateBPM);
   }
 #endif
 }
 
-// Buzzes while charging: a short one when the cable goes in, a double one at
-// 80 % and a long triple one when full. Silent in Quiet Time, and never for
+// Buzzes while charging: one when the cable goes in, then the set number at
+// 80 % and when full (Buzz80 / BuzzFull). Silent in Quiet Time, and never for
 // the state the watch is already in when the face starts.
 static void start_charge_anim(void);
+
+// `n` short buzzes in a row.
+static void buzz_times(int n) {
+  static uint32_t pattern[2 * 10 - 1];
+  if (n <= 0) return;
+  if (n > 10) n = 10;
+  for (int i = 0; i < 2 * n - 1; i++) pattern[i] = i % 2 ? 180 : 220;  // on 220 ms, off 180 ms
+  vibes_enqueue_custom_pattern((VibePattern){ .durations = pattern, .num_segments = (uint32_t)(2 * n - 1) });
+}
 
 static void charge_buzz(BatteryChargeState s) {
   static bool s_known, s_plugged, s_charging;
@@ -145,10 +162,9 @@ static void charge_buzz(BatteryChargeState s) {
       bool full = (s.charge_percent >= 100 && s_pct < 100) ||
                   (s_charging && !s.is_charging && s_pct >= 80);
       if (full) {
-        static const uint32_t pattern[] = { 300, 150, 300, 150, 500 };
-        vibes_enqueue_custom_pattern((VibePattern){ .durations = pattern, .num_segments = 5 });
+        buzz_times(g_set.buzzfull);
       } else if (s.charge_percent >= 80 && s_pct < 80) {
-        vibes_double_pulse();
+        buzz_times(g_set.buzz80);
       }
     }
   }
@@ -156,6 +172,11 @@ static void charge_buzz(BatteryChargeState s) {
   s_plugged = s.is_plugged;
   s_charging = s.is_charging;
   s_pct = s.charge_percent;
+}
+
+// Redraw when the phone connects or drops, for the phone symbol.
+static void connection_handler(bool connected) {
+  if (s_canvas) layer_mark_dirty(s_canvas);
 }
 
 static void battery_handler(BatteryChargeState s) {
@@ -217,6 +238,8 @@ static bool read_weather(DictionaryIterator *it) {
   read_bytes(it, MESSAGE_KEY_WxProb, w.prob, w.count);
   read_bytes(it, MESSAGE_KEY_WxCode, w.code, w.count);
   read_bytes(it, MESSAGE_KEY_WxGust, w.gust, w.count);
+  memset(w.winddir, 255, sizeof(w.winddir));
+  read_bytes(it, MESSAGE_KEY_WxWindDir, w.winddir, w.count);
   read_bytes(it, MESSAGE_KEY_WxUv, w.uv, w.count);
   read_bytes(it, MESSAGE_KEY_WxDay, w.day, w.count);
 
@@ -276,6 +299,10 @@ static bool read_settings(DictionaryIterator *it) {
   s.rainalert = read_int(it, MESSAGE_KEY_RainAlert, s.rainalert);
   s.chargebuzz = read_int(it, MESSAGE_KEY_ChargeBuzz, s.chargebuzz) ? 1 : 0;
   s.barslot = (uint8_t)read_int(it, MESSAGE_KEY_BarSlot, s.barslot);
+  s.symleft = (uint8_t)read_int(it, MESSAGE_KEY_SymLeft, s.symleft);
+  s.symright = (uint8_t)read_int(it, MESSAGE_KEY_SymRight, s.symright);
+  s.buzz80 = (uint8_t)read_int(it, MESSAGE_KEY_Buzz80, s.buzz80);
+  s.buzzfull = (uint8_t)read_int(it, MESSAGE_KEY_BuzzFull, s.buzzfull);
   s.owncolors = read_int(it, MESSAGE_KEY_OwnColors, s.owncolors);
   // The colour pickers send 24-bit RGB; keep the nearest Pebble colour.
   if (dict_find(it, MESSAGE_KEY_TextColor)) s.textcolor = GColorFromHEX(read_int(it, MESSAGE_KEY_TextColor, 0)).argb;
@@ -283,6 +310,10 @@ static bool read_settings(DictionaryIterator *it) {
   if (s.theme >= THEME_COUNT) s.theme = THEME_MIDNIGHT;
   if (s.tilt <= -360 || s.tilt >= 360) s.tilt = 0;
   if (s.barslot != 15 && s.barslot != 60) s.barslot = 30;
+  if (s.symleft >= SYM_COUNT) s.symleft = SYM_WEATHER;
+  if (s.symright >= SYM_COUNT) s.symright = SYM_RAIN;
+  if (s.buzz80 > 10) s.buzz80 = 3;
+  if (s.buzzfull > 10) s.buzzfull = 5;
   if (s.lang >= LANG_COUNT) s.lang = LANG_EN;
   g_set = s;
   if (!g_set.tilt) tilt_release();
@@ -476,6 +507,7 @@ static void init(void) {
 
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
   battery_state_service_subscribe(battery_handler);
+  connection_service_subscribe((ConnectionHandlers){ .pebble_app_connection_handler = connection_handler });
   accel_tap_service_subscribe(tap_handler);
 
   app_message_register_inbox_received(inbox_received);
@@ -485,6 +517,7 @@ static void init(void) {
 static void deinit(void) {
   tick_timer_service_unsubscribe();
   battery_state_service_unsubscribe();
+  connection_service_unsubscribe();
   accel_tap_service_unsubscribe();
   animation_unschedule_all();
   window_destroy(s_window);
