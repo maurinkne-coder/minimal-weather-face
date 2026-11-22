@@ -69,10 +69,10 @@
       "media": [
         {
           "type": "font",
-          "name": "FONT_TIME_60",
-          "file": "fonts/Inter-Light.ttf",
-          "characterRegex": "[0-9:]",
-          "trackingAdjust": -3
+          "name": "FONT_CLOCK_80",
+          "file": "fonts/Inter-ExtraBold.ttf",
+          "characterRegex": "[0-9]",
+          "trackingAdjust": -2
         }
       ]
     }

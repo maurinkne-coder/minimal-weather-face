@@ -81,7 +81,7 @@ typedef struct {
 extern Settings g_set;
 extern Weather g_wx;
 extern ViewState g_view;
-extern GFont g_time_font;   // big digits for the time
+extern GFont g_time_font;   // big bold digits for the stacked clock
 
 // weather.c
 int wx_index_at(time_t t);           // hourly index covering t, or -1
@@ -91,8 +91,8 @@ int wx_range_hours(void);            // hours on the ring for this watch
 
 // text.c
 void text_date(char *buf, size_t n, time_t now);
-void text_time(char *buf, size_t n, time_t now);
-void text_weather(char *buf, size_t n, time_t now);
+void text_clock_parts(char *h, size_t hn, char *m, size_t mn, time_t now);
+void text_temp(char *buf, size_t n, time_t now);
 void text_smart(char *buf, size_t n, time_t now);
 void text_corner(char *buf, size_t n);
 void text_scrub(char *line1, size_t n1, char *line2, size_t n2, time_t t);

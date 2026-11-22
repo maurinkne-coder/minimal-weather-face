@@ -1,7 +1,7 @@
 # Contour
 
 A minimal Pebble watchface: the next hours of rain drawn as a
-blue bar chart around a big clock. Built for Pebble Time 2
+blue bar chart around a big, clean stacked clock. Built for Pebble Time 2
 (`emery`) and Pebble Round 2 (`gabbro`).
 
 | Round 2 | Round 2, Daylight | Round 2, tilted 30° | Time 2 | Time 2, wrist flick |
@@ -31,11 +31,12 @@ fonts, so the lettering differs a little from the watch._
 
 - **Solid bars** mean rain is likely (50 % or more). **Outlined bars** mean it
   is unlikely.
-- **Rain amounts**: each rain spell is labelled with its heaviest hour, like
-  `2.8 mm` (or `.11 in`), placed as close to the longest bar as it fits beside
-  the text.
-- **Middle**: the date, the time in large Inter Light digits, the current temperature and sky, then a
-  smart line, then an optional extra line (battery, steps or heart rate).
+- **Rain amounts**: when rain is coming, the smart line adds the heaviest
+  hour of the spell, like `Rain in 45 min · 2.8 mm`.
+- **Clock**: big bold stacked hours over minutes (Inter ExtraBold), with the
+  date small above. Between them is a thin info row with the temperature and
+  the smart line, and an optional extra line (battery, steps or heart rate)
+  sits below.
 - **Wrist flick**: a cursor walks along the line, and the middle shows the
   time, temperature and rain for each hour.
 - **Tilt**: the whole face can be turned (15° steps up to 90° either way, or
@@ -90,7 +91,7 @@ which is why npm must be installed.
 | Path | What it does |
 |---|---|
 | `src/c/main.c` | Watch app: storage, messages from the phone, ticks, battery, health, animations |
-| `src/c/draw.c` | Draws the rain bars, their labels and the text |
+| `src/c/draw.c` | Draws the rain bars and the stacked clock |
 | `src/c/tilt.c` | Turns the face when a tilt is set |
 | `src/c/text.c` | Translations, units, and the smart line |
 | `src/c/weather.c` | Small helpers for the stored forecast |

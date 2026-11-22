@@ -59,12 +59,12 @@ def render(log, w, h, round_, out):
             _, deg, a = c
             img = img.rotate(-deg, resample=Image.NEAREST, center=(w * S / 2, h * S / 2), fillcolor=col(a))
             d = ImageDraw.Draw(img)
-        elif k == "text" and c[2].startswith("time"):
+        elif k == "text" and c[2].startswith("clock"):
             _, s, f, x, y, bw, bh, a = c
-            size = int(f[4:])
-            font = ImageFont.truetype(os.path.join(HERE, "../../resources/fonts/Inter-Light.ttf"), size * S)
-            adv = [d.textlength(ch, font=font) - 3 * S for ch in s]
-            tw = sum(adv) + 3 * S
+            size = int(f[5:])
+            font = ImageFont.truetype(os.path.join(HERE, "../../resources/fonts/Inter-ExtraBold.ttf"), size * S)
+            adv = [d.textlength(ch, font=font) - 2 * S for ch in s]
+            tw = sum(adv) + 2 * S
             if tw > bw * S:
                 overflow.append(s)
             px = x * S + (bw * S - tw) / 2

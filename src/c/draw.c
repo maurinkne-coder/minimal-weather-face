@@ -5,8 +5,7 @@
 // hours. Dry slots are faint dashes along the edge; rainy slots grow a bar
 // inward: the longer the bar, the more rain. The colour grades the amount
 // (light < 1 mm/h, medium 1-4, heavy >= 4), solid bars are likely rain and
-// outlined bars unlikely rain, and each rain spell is labelled with its
-// heaviest hour in mm (or inch).
+// outlined bars unlikely rain. The amount is spelled out in the smart line.
 
 #define FRAC 65536
 
@@ -28,10 +27,6 @@ typedef struct {
 #define CORNER_R 18
 #endif
 #define BASE_MID (RAIN_EDGE + RAIN_DEPTH / 2)
-
-// Text in the middle, as drawn upright, so labels can keep clear of it.
-static GRect s_text[5];
-static int s_text_n;
 
 #if defined(PBL_ROUND)
 static GPoint round_pt(GRect b, int32_t f, int inset) {
@@ -200,67 +195,6 @@ static void draw_quad(GContext *ctx, GPoint a, GPoint c, GPoint d, GPoint e, boo
   gpath_destroy(path);
 }
 
-static bool rects_overlap(GRect a, GRect c) {
-  return a.origin.x < c.origin.x + c.size.w && c.origin.x < a.origin.x + a.size.w &&
-         a.origin.y < c.origin.y + c.size.h && c.origin.y < a.origin.y + a.size.h;
-}
-
-// Writes the spell's heaviest hourly amount just inside the line, as close to
-// the deepest point as it fits without sitting on the text in the middle.
-static bool label_fits(GRect b, GRect box) {
-  int cx = b.origin.x + b.size.w / 2, cy = b.origin.y + b.size.h / 2;
-#if defined(PBL_ROUND)
-  // All four corners inside the circle, with a small margin.
-  int r = b.size.w / 2 - RAIN_EDGE - RAIN_DEPTH - 3;   // clear of the bars
-  for (int i = 0; i < 4; i++) {
-    int x = box.origin.x + (i & 1 ? box.size.w : 0) - cx;
-    int y = box.origin.y + (i & 2 ? box.size.h : 0) - cy;
-    if (x * x + y * y > r * r) return false;
-  }
-#else
-  const int m = RAIN_EDGE + RAIN_DEPTH + 2;            // clear of the bars
-  if (box.origin.x < b.origin.x + m || box.origin.y < b.origin.y + m ||
-      box.origin.x + box.size.w > b.origin.x + b.size.w - m ||
-      box.origin.y + box.size.h > b.origin.y + b.size.h - m) return false;
-#endif
-  // Compare with the text in its own (possibly turned) frame.
-  int32_t ta = DEG_TO_TRIGANGLE(((g_set.tilt % 360) + 360) % 360);
-  int32_t sn = sin_lookup(ta), cs = cos_lookup(ta);
-  int32_t dx = box.origin.x + box.size.w / 2 - cx, dy = box.origin.y + box.size.h / 2 - cy;
-  int ux = cx + (int)((dx * cs + dy * sn) / TRIG_MAX_RATIO);
-  int uy = cy + (int)((-dx * sn + dy * cs) / TRIG_MAX_RATIO);
-  GRect turned = GRect(ux - box.size.w / 2, uy - box.size.h / 2, box.size.w, box.size.h);
-  for (int i = 0; i < s_text_n; i++) {
-    if (rects_overlap(turned, s_text[i])) return false;
-  }
-  return true;
-}
-
-static void draw_rain_label(GContext *ctx, GRect b, const Theme *th, time_t now, int range_s,
-                            int k0, int k1, int peak) {
-  char tb[16];
-  fmt_rain_short(tb, sizeof(tb), g_wx.precip[peak]);
-  // Try the peak first, then step outwards through the spell, half an hour at a time.
-  int span = (k1 - k0 + 1) * 2;
-  for (int i = 0; i <= span * 2; i++) {
-    int step = (i + 1) / 2 * (i % 2 ? 1 : -1);
-    time_t t = (time_t)g_wx.t0 + (time_t)peak * 3600 + 1800 + (time_t)step * 1800;
-    if (t < (time_t)g_wx.t0 + (time_t)k0 * 3600 || t > (time_t)g_wx.t0 + (time_t)(k1 + 1) * 3600) continue;
-    if (t < now || t >= now + range_s) continue;
-    int32_t f = frac_of(t, now, range_s);
-    for (int in = RAIN_EDGE + bar_len(g_wx.precip[peak]) + 10; in <= RAIN_EDGE + RAIN_DEPTH + 34; in += 4) {
-      GPoint p = track_pt(b, f, in);
-      GRect box = GRect(p.x - 20, p.y - 7, 40, 14);
-      if (!label_fits(b, box)) continue;
-      graphics_context_set_text_color(ctx, th->medium);
-      graphics_draw_text(ctx, tb, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
-                         GRect(p.x - 22, p.y - 10, 44, 16), GTextOverflowModeFill,
-                         GTextAlignmentCenter, NULL);
-      return;
-    }
-  }
-}
-
 // Rain rate (0.1 mm per hour) for the half hour starting at `slot`. The next
 // two hours use the 15-minute data when it covers them; later slots use the
 // hourly forecast.
@@ -319,26 +253,6 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
               track_pt(b, f1, RAIN_EDGE + len), track_pt(b, f0, RAIN_EDGE + len), likely);
   }
 
-  int first = wx_index_at(now);
-  // Amount at the heaviest hour of each rain spell (up to 4 spells).
-  if (first >= 0 && g_view.reveal >= 1000) {
-    int labels = 0, peak = -1, k0 = -1;
-    for (int k = first; k <= g_wx.count && labels < 4; k++) {
-      time_t start = (time_t)g_wx.t0 + (time_t)k * 3600;
-      bool in_range = k < g_wx.count && start < now + range_s;
-      bool wet = in_range && g_wx.precip[k] >= 1;
-      if (wet) {
-        if (peak < 0) k0 = k;
-        if (peak < 0 || g_wx.precip[k] > g_wx.precip[peak]) peak = k;
-      } else if (peak >= 0) {
-        draw_rain_label(ctx, b, th, now, range_s, k0, k - 1, peak);
-        labels++;
-        peak = -1;
-      }
-      if (!in_range) break;
-    }
-  }
-
   // "Now" marker on the base line, and the scroll cursor during a wrist flick.
   GPoint now_p = track_pt(b, 0, RAIN_EDGE);
   graphics_context_set_fill_color(ctx, th->bg);
@@ -360,12 +274,6 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
 // ---------------------------------------------------------------------------
 
 static void draw_text_font(GContext *ctx, const char *s, GFont font, GRect r, GColor c) {
-  if (s_text_n < (int)ARRAY_LENGTH(s_text) && s[0]) {
-    GSize sz = graphics_text_layout_get_content_size(s, font, r, GTextOverflowModeTrailingEllipsis,
-                                                     GTextAlignmentCenter);
-    s_text[s_text_n++] = GRect(r.origin.x + (r.size.w - sz.w) / 2 - 2, r.origin.y,
-                               sz.w + 4, sz.h + 4);
-  }
   graphics_context_set_text_color(ctx, c);
   graphics_draw_text(ctx, s, font, r, GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
 }
@@ -382,37 +290,63 @@ void draw_face(Layer *layer, GContext *ctx) {
   graphics_context_set_fill_color(ctx, th.bg);
   graphics_fill_rect(ctx, b, 0, GCornerNone);
 
-  s_text_n = 0;
-  char date[16], clock[8], line1[40], line2[64], corner[24];
+  char hh[4], mm[4], date[16], left[40], right[64], corner[24];
+  text_clock_parts(hh, sizeof(hh), mm, sizeof(mm), now);
   text_date(date, sizeof(date), now);
-  text_time(clock, sizeof(clock), now);
   if (g_view.scrub >= 0) {
-    text_scrub(line1, sizeof(line1), line2, sizeof(line2), now + (time_t)g_view.scrub * 360);
+    text_scrub(left, sizeof(left), right, sizeof(right), now + (time_t)g_view.scrub * 360);
   } else {
-    text_weather(line1, sizeof(line1), now);
-    text_smart(line2, sizeof(line2), now);
+    text_temp(left, sizeof(left), now);
+    text_smart(right, sizeof(right), now);
   }
   text_corner(corner, sizeof(corner));
 
+  // Stacked clock: date, hours, a thin info row, minutes, extra line.
+  // CLOCK_CAP is the height of the digits; CLOCK_PAD is the space the font
+  // leaves above them inside its text box.
+  const int CLOCK_CAP = 60, CLOCK_PAD = 19, CLOCK_BOX = 84;
+  const int cx = b.origin.x + b.size.w / 2;
   const int cy = b.origin.y + b.size.h / 2;
-  const int side = PBL_IF_ROUND_ELSE(36, 26);
-  const int w = b.size.w - 2 * side;
-  const int x = b.origin.x + side;
-  // Stack: date, big time, weather, smart line, extra line; centred on cy.
-  const int time_h = 62, time_dy = 6;    // Inter Light 60
-  const int block = 18 + time_h + 28 + 22 + (corner[0] ? 18 : 0);
-  const int top = cy - block / 2 + PBL_IF_ROUND_ELSE(22, 2);
-  int y = top;
-  draw_text_line(ctx, date, FONT_KEY_GOTHIC_18_BOLD, GRect(x, y, w, 22), th.dim);
-  y += time_dy;
-  draw_text_font(ctx, clock, g_time_font, GRect(b.origin.x, y, b.size.w, time_h), th.fg);
-  y += time_h;
-  draw_text_line(ctx, line1, FONT_KEY_GOTHIC_24_BOLD, GRect(x, y, w, 30), th.fg);
-  y += 28;
-  draw_text_line(ctx, line2, FONT_KEY_GOTHIC_18, GRect(x, y, w, 24), th.accent);
-  y += 23;
+  const int total = 18 + CLOCK_CAP + 10 + 18 + 10 + CLOCK_CAP + (corner[0] ? 20 : 0);
+  int y = cy - total / 2 + (corner[0] ? 0 : 4);
+
+  draw_text_line(ctx, date, FONT_KEY_GOTHIC_14_BOLD, GRect(cx - 60, y - 3, 120, 18), th.dim);
+  y += 18;
+  draw_text_font(ctx, hh, g_time_font, GRect(b.origin.x, y - CLOCK_PAD, b.size.w, CLOCK_BOX), th.fg);
+  y += CLOCK_CAP + 10;
+
+  // Info row: temperature in the main colour, then the smart line.
+  {
+    const int max_w = PBL_IF_ROUND_ELSE(190, 156);
+    GFont fl = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+    GFont fr = fonts_get_system_font(FONT_KEY_GOTHIC_18);
+    GRect wide = GRect(0, 0, 400, 24);
+    int wl = graphics_text_layout_get_content_size(left, fl, wide, GTextOverflowModeTrailingEllipsis,
+                                                   GTextAlignmentLeft).w;
+    int wr = right[0] ? graphics_text_layout_get_content_size(right, fr, wide,
+                                                              GTextOverflowModeTrailingEllipsis,
+                                                              GTextAlignmentLeft).w : 0;
+    if (wl + 6 + wr > max_w && right[0]) {
+      // Too long: drop to the smaller font before cutting anything off.
+      fr = fonts_get_system_font(FONT_KEY_GOTHIC_14);
+      wr = graphics_text_layout_get_content_size(right, fr, wide, GTextOverflowModeTrailingEllipsis,
+                                                 GTextAlignmentLeft).w;
+    }
+    int gap = wr ? 6 : 0;
+    if (wl + gap + wr > max_w) wr = max_w - wl - gap;
+    int x0 = cx - (wl + gap + wr) / 2;
+    draw_text_font(ctx, left, fl, GRect(x0 - 2, y - 6, wl + 4, 24), th.fg);
+    if (wr > 0) {
+      int dy = wr && fr == fonts_get_system_font(FONT_KEY_GOTHIC_14) ? -2 : -6;
+      draw_text_font(ctx, right, fr, GRect(x0 + wl + gap - 2, y + dy, wr + 4, 24), th.accent);
+    }
+  }
+  y += 18 + 10;
+
+  draw_text_font(ctx, mm, g_time_font, GRect(b.origin.x, y - CLOCK_PAD, b.size.w, CLOCK_BOX), th.fg);
+  y += CLOCK_CAP + 4;
   if (corner[0]) {
-    draw_text_line(ctx, corner, FONT_KEY_GOTHIC_14, GRect(x, y, w, 18), th.dim);
+    draw_text_line(ctx, corner, FONT_KEY_GOTHIC_14, GRect(cx - 60, y - 2, 120, 18), th.dim);
   }
 
   // Turn the text, then draw the forecast line already turned.

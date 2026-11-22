@@ -318,7 +318,7 @@ static void canvas_update(Layer *layer, GContext *ctx) {
 }
 
 static void window_load(Window *window) {
-  g_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_TIME_60));
+  g_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CLOCK_80));
   Layer *root = window_get_root_layer(window);
   s_canvas = layer_create(layer_get_bounds(root));
   layer_set_update_proc(s_canvas, canvas_update);

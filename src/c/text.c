@@ -181,29 +181,43 @@ void text_date(char *buf, size_t n, time_t now) {
   snprintf(buf, n, "%s %d", DAYS[lang][tm->tm_wday], tm->tm_mday);
 }
 
-void text_time(char *buf, size_t n, time_t now) {
+// Hours and minutes for the stacked clock.
+void text_clock_parts(char *h, size_t hn, char *m, size_t mn, time_t now) {
   struct tm *tm = localtime(&now);
-  if (use_24h()) {
-    snprintf(buf, n, "%02d:%02d", tm->tm_hour, tm->tm_min);
+  int hour = tm->tm_hour;
+  if (!use_24h()) {
+    hour %= 12;
+    if (hour == 0) hour = 12;
+    snprintf(h, hn, "%d", hour);
   } else {
-    int h = tm->tm_hour % 12;
-    snprintf(buf, n, "%d:%02d", h == 0 ? 12 : h, tm->tm_min);
+    snprintf(h, hn, "%02d", hour);
   }
+  snprintf(m, mn, "%02d", tm->tm_min);
 }
 
-// "16° Drizzle"
-void text_weather(char *buf, size_t n, time_t now) {
+// The temperature right now, like "16°".
+void text_temp(char *buf, size_t n, time_t now) {
   int i = wx_index_at(now);
   if (i < 0) {
     snprintf(buf, n, "--°");
     return;
   }
   bool fresh = g_wx.cur_t && now - (time_t)g_wx.cur_t < 75 * 60 && now >= (time_t)g_wx.cur_t - 900;
-  int16_t t = fresh ? g_wx.cur_temp : g_wx.temp[i];
-  uint8_t code = fresh ? g_wx.cur_code : g_wx.code[i];
-  char tb[8];
-  fmt_temp(tb, sizeof(tb), t);
-  snprintf(buf, n, "%s %s", tb, cond_name(code));
+  fmt_temp(buf, n, fresh ? g_wx.cur_temp : g_wx.temp[i]);
+}
+
+// Appends the heaviest hour of the coming rain spell, like " · 2.8 mm".
+static void add_amount(char *buf, size_t n, int i) {
+  int peak = 0;
+  for (int k = i; k < i + 8 && k < g_wx.count; k++) {
+    if (g_wx.precip[k] > peak) peak = g_wx.precip[k];
+    else if (peak && g_wx.precip[k] < 1) break;
+  }
+  if (peak < 1) return;
+  char rb[16];
+  fmt_rain_short(rb, sizeof(rb), peak);
+  size_t len = strlen(buf);
+  snprintf(buf + len, n - len, " · %s", rb);
 }
 
 static bool smart_rain(char *buf, size_t n, time_t now, int i) {
@@ -224,6 +238,7 @@ static bool smart_rain(char *buf, size_t n, time_t now, int i) {
           mins = ((mins + 2) / 5) * 5;
           if (mins < 5) mins = 5;
           snprintf(buf, n, tr(S_RAIN_IN), mins);
+          add_amount(buf, n, i);
           return true;
         }
       }
@@ -236,6 +251,7 @@ static bool smart_rain(char *buf, size_t n, time_t now, int i) {
       if (wx_wet(k)) {
         fmt_clock(tb, sizeof(tb), hour_start(k));
         snprintf(buf, n, tr(S_RAIN_AT), tb);
+        add_amount(buf, n, k);
         return true;
       }
     }
@@ -247,10 +263,12 @@ static bool smart_rain(char *buf, size_t n, time_t now, int i) {
       if (!wx_wet(k)) {
         fmt_clock(tb, sizeof(tb), hour_start(k));
         snprintf(buf, n, tr(S_RAIN_UNTIL), tb);
+        add_amount(buf, n, i);
         return true;
       }
     }
     snprintf(buf, n, "%s", tr(S_RAIN_NOW));
+    add_amount(buf, n, i);
     return true;
   }
   return false;
@@ -405,14 +423,14 @@ void text_scrub(char *line1, size_t n1, char *line2, size_t n2, time_t t) {
   }
   bool ok;
   fmt_temp(tb, sizeof(tb), wx_temp_at(t, &ok));
-  snprintf(line1, n1, "%s  %s", cb, tb);
+  snprintf(line1, n1, "%s  %s", cb, tb);  // e.g. "21:00  6°"
   if (g_wx.precip[i] >= 1) {
     char rb[16];
     fmt_rain(rb, sizeof(rb), g_wx.precip[i]);
     if (g_wx.prob[i] != PROB_UNKNOWN) {
-      snprintf(line2, n2, "%s %s  %d%%", cond_name(g_wx.code[i]), rb, g_wx.prob[i]);
+      snprintf(line2, n2, "%s  %d%%", rb, g_wx.prob[i]);
     } else {
-      snprintf(line2, n2, "%s %s", cond_name(g_wx.code[i]), rb);
+      snprintf(line2, n2, "%s", rb);
     }
   } else {
     snprintf(line2, n2, "%s", cond_name(g_wx.code[i]));
