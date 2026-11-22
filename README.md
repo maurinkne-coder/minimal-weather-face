@@ -13,16 +13,16 @@ fonts, so the lettering differs a little from the watch._
 
 ## How to read it
 
-- **The line** starts at the dot at the top (now) and runs clockwise. Round 2
+- **Two lines** start at the dot at the top (now) and run clockwise. Round 2
   shows 24 hours. On Time 2 you can choose 12, 24 or 48 hours.
-- **Distance from the edge** is the temperature. The line moves out towards
-  the edge when it gets warmer and in towards the time when it gets colder.
-  The scale stretches to the warmest and coldest moment shown, with a 6° minimum
-  so a flat day stays a calm line.
-- **Brightness**: the line is dimmer at night.
-- **Short bars** are rain, in the same colour as the line: inside the line on
-  Round 2, along the screen edge on Time 2. Longer bars mean more rain, and
-  dimmer bars mean it's less likely.
+- **The blue rain line** runs all the way round the edge. It bends inward where
+  rain is coming: the deeper the bend, the more rain. It turns full blue where
+  rain is likely and stays pale where it's dry or rain is unlikely. In Mono it's
+  white and grey.
+- **The temperature line** sits inside it. It moves out towards the edge when
+  it gets warmer and in towards the time when it gets colder. The scale
+  stretches to the warmest and coldest moment shown, with a 6° minimum so a flat
+  day stays a calm line. It's dimmer at night.
 - **Small dots** mark 00, 06, 12 and 18 o'clock. The midnight dot is bigger.
 - **Round 2 only**: small numbers show the high and low of the next 24 hours.
 - **Middle**: the date, the time in large Inter Light digits, the current temperature and sky, then a
@@ -81,7 +81,7 @@ which is why npm must be installed.
 | Path | What it does |
 |---|---|
 | `src/c/main.c` | Watch app: storage, messages from the phone, ticks, battery, health, animations |
-| `src/c/draw.c` | Draws the forecast line and the text |
+| `src/c/draw.c` | Draws the rain and temperature lines and the text |
 | `src/c/tilt.c` | Turns the face when a tilt is set |
 | `src/c/text.c` | Translations, units, and the smart line |
 | `src/c/weather.c` | Small helpers for the stored forecast |

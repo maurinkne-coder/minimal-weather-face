@@ -1,10 +1,13 @@
 #include "contour.h"
 
-// The face: one thin line around the edge of the screen, starting at the top
-// ("now") and running clockwise into the coming hours. The line sits closer
-// to the edge when it is warmer and further in when it is colder, like a
-// contour line. It is dimmer at night. Short bars inside it are rain, and
-// small dots mark 00, 06, 12 and 18 o'clock.
+// The face: two thin lines round the edge of the screen, starting at the top
+// ("now") and running clockwise into the coming hours, like contour lines.
+// - The blue rain line hugs the edge and bends inward where it will rain:
+//   the deeper the bend, the more rain. Rain that is likely turns it full
+//   blue; dry or unlikely stretches stay pale.
+// - The temperature line sits inside it, moving out towards the edge when it
+//   gets warmer and in towards the time when it gets colder. It is dimmer at
+//   night. Small dots mark 00, 06, 12 and 18 o'clock.
 
 #define FRAC 65536
 
@@ -17,23 +20,22 @@ typedef struct {
 // ---------------------------------------------------------------------------
 
 #if defined(PBL_ROUND)
-#define LINE_OUT 6        // warmest point: pixels from the screen edge
-#define LINE_SPAN 20      // coldest point is this much further in
+#define RAIN_EDGE 4       // rain line when dry: pixels from the screen edge
+#define RAIN_DEPTH 9      // how far in it bends for heavy rain
+#define LINE_OUT 17       // warmest point of the temperature line
+#define LINE_SPAN 18      // coldest point is this much further in
 #define LINE_W 3
-#define TICK_IN (LINE_OUT + LINE_SPAN + 4)
-#define RAIN_IN (TICK_IN + 4)   // rain bars sit inside the line
-#define RAIN_MAX 12
+#define TICK_IN (LINE_OUT + LINE_SPAN + 5)
 #else
-// Less room beside the text on Time 2, so rain bars hug the screen edge
-// and the line runs just inside them.
-#define RAIN_IN 1
-#define RAIN_MAX 7
-#define LINE_OUT 11
-#define LINE_SPAN 11
+#define RAIN_EDGE 2
+#define RAIN_DEPTH 7
+#define LINE_OUT 13
+#define LINE_SPAN 10
 #define LINE_W 2
-#define TICK_IN 5
+#define TICK_IN (LINE_OUT + LINE_SPAN + 3)
 #define CORNER_R 18
 #endif
+#define RAIN_W 2
 
 #define BASE_MID (LINE_OUT + LINE_SPAN / 2)
 
@@ -88,13 +90,11 @@ static GPoint rect_pt(GRect b, int32_t f, int inset) {
 // Where "now" sits when the face is turned: fraction of the way round.
 static int32_t s_tilt_f;
 
-#if !defined(PBL_ROUND)
 static int32_t isqrt(int32_t v) {
   int32_t r = 0;
   while ((r + 1) * (r + 1) <= v) r++;
   return r;
 }
-#endif
 
 // The point at fraction f round the face, `inset` pixels in from the edge,
 // measured at right angles to the edge.
@@ -138,10 +138,6 @@ static int32_t tilt_frac(GRect b, int deg) {
 #endif
 }
 
-static void draw_ray(GContext *ctx, GRect b, int32_t f, int in0, int in1) {
-  graphics_draw_line(ctx, track_pt(b, f, in0), track_pt(b, f, in1));
-}
-
 // ---------------------------------------------------------------------------
 // Colour
 // ---------------------------------------------------------------------------
@@ -150,16 +146,16 @@ static Theme theme_for(int id) {
   switch (id) {
     case THEME_DAYLIGHT:
       return (Theme){ GColorWhite, GColorBlack, GColorDarkGray, GColorCobaltBlue,
-                      GColorBlack, GColorLightGray };
+                      GColorBlue, GColorPictonBlue };
     case THEME_MONO:
       return (Theme){ GColorBlack, GColorWhite, GColorLightGray, GColorWhite,
                       GColorWhite, GColorDarkGray };
     case THEME_GRAPHITE:
       return (Theme){ GColorDarkGray, GColorWhite, GColorLightGray, GColorIcterine,
-                      GColorWhite, GColorLightGray };
+                      GColorElectricBlue, GColorPictonBlue };
     default: // THEME_MIDNIGHT
       return (Theme){ GColorBlack, GColorWhite, GColorDarkGray, GColorCeleste,
-                      GColorWhite, GColorDarkGray };
+                      GColorPictonBlue, GColorCobaltBlue };
   }
 }
 
@@ -187,6 +183,28 @@ static int32_t frac_of(time_t t, time_t now, int range_s) {
 static int temp_inset(int16_t t, int16_t hi, int16_t lo) {
   if (hi <= lo) return LINE_OUT + LINE_SPAN / 2;
   return LINE_OUT + (int)((int32_t)(hi - t) * LINE_SPAN / (hi - lo));
+}
+
+// How far the rain line bends in at time t (0 when dry). Hourly amounts are
+// placed at the middle of their hour and blended in between; a square root
+// keeps light rain visible without heavy rain running into the other line.
+static int rain_depth(time_t t, bool *likely) {
+  *likely = true;
+  if (g_wx.count == 0) return 0;
+  int32_t x = (int32_t)(t - (time_t)g_wx.t0) - 1800;   // seconds past hour 0's middle
+  if (x < 0) x = 0;
+  int k = x / 3600;
+  if (k >= g_wx.count) return 0;
+  int32_t frac = x % 3600;
+  int32_t a = g_wx.precip[k];
+  int32_t c = k + 1 < g_wx.count ? g_wx.precip[k + 1] : a;
+  int32_t p = a + (c - a) * frac / 3600;               // 0.1 mm per hour
+  uint8_t pr = frac < 1800 || k + 1 >= g_wx.count ? g_wx.prob[k] : g_wx.prob[k + 1];
+  // Dry stretches stay pale, so the rain stands out in full blue.
+  *likely = p >= 1 && (pr == PROB_UNKNOWN || pr >= 50);
+  if (p < 1) return 0;
+  if (p > 40) p = 40;                                  // 4 mm/h fills the depth
+  return 1 + (int)(isqrt(p * 100) * (RAIN_DEPTH - 1) / 63);
 }
 
 static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
@@ -256,27 +274,25 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
     }
   }
 
-  // Rain bars, one per hour, inside the line.
-  int rain_w = range <= 12 ? 5 : range <= 24 ? PBL_IF_ROUND_ELSE(5, 3) : 2;
-  graphics_context_set_stroke_width(ctx, rain_w);
-  int first = wx_index_at(now);
-  if (first >= 0) {
-    for (int k = first; k < g_wx.count; k++) {
-      time_t mid = (time_t)g_wx.t0 + (time_t)k * 3600 + 1800;
-      if (mid >= now + range_s) break;
-      if (mid < now) mid = now;
-      if (g_wx.precip[k] < 1) continue;
-      int32_t f = frac_of(mid, now, range_s);
-      if (f * 1000 / FRAC > g_view.reveal) continue;
-      int p = g_wx.precip[k] > 40 ? 40 : g_wx.precip[k];   // cap at 4 mm/h
-      int len = 2 + p * (RAIN_MAX - 2) / 40;
-      bool likely = g_wx.prob[k] == PROB_UNKNOWN || g_wx.prob[k] >= 50;
+  // The rain line, all the way round, hugging the edge.
+  graphics_context_set_stroke_width(ctx, RAIN_W);
+  prev_ok = false;
+  for (int s = 0; s <= shown; s++) {
+    int32_t f = (int32_t)s * FRAC / steps;
+    time_t t = now + (time_t)s * range_s / steps;
+    bool likely;
+    int depth = rain_depth(t, &likely);
+    GPoint p = track_pt(b, f, RAIN_EDGE + depth);
+    if (prev_ok) {
       graphics_context_set_stroke_color(ctx, likely ? th->rain : th->rain_light);
-      draw_ray(ctx, b, f, RAIN_IN, RAIN_IN + len);
+      graphics_draw_line(ctx, prev, p);
     }
+    prev = p;
+    prev_ok = true;
   }
 
 #if defined(PBL_ROUND)
+  int first = wx_index_at(now);
   // High and low of the next 24 hours, next to where they happen.
   if (first >= 0 && g_view.reveal >= 1000) {
     int ih = -1, il = -1;
@@ -292,7 +308,7 @@ static void draw_track(GContext *ctx, GRect b, const Theme *th, time_t now) {
       if (t < now) t = now;
       int32_t f = frac_of(t, now, range_s);
       if (f < FRAC / 40 || f > FRAC - FRAC / 40) continue; // keep clear of "now"
-      GPoint p = track_pt(b, f, RAIN_IN + RAIN_MAX + 12);
+      GPoint p = track_pt(b, f, TICK_IN + 14);
       // Keep clear of the weather line beside the middle of the face.
       // Work in the turned frame of the text, then turn back.
       int cx = b.origin.x + b.size.w / 2, cy = b.origin.y + b.size.h / 2;
