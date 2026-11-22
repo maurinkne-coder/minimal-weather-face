@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
   if (argc > 11) { g_set.owncolors = 1; g_set.textcolor = (uint8_t)strtol(argv[11], NULL, 16); g_set.accentcolor = (uint8_t)strtol(argv[12], NULL, 16); }
   fake(now, atoi(argv[5]));
   bool scenario0 = atoi(argv[5]) == 0;
-  g_view = (ViewState){ .now = now, .reveal = 1000, .scrub = atoi(argv[8]), .battery = 80, .charging = scenario0, .steps = 6214, .heart = 64, .step_goal = 10000 };
+  g_view = (ViewState){ .now = now, .reveal = 1000, .scrub = atoi(argv[8]), .battery = 80, .charging = scenario0, .steps = 6214, .heart = 64, .step_goal = 10000, .charge_anim = getenv("CHARGE") ? atoi(getenv("CHARGE")) : -1 };
   struct GContext ctx = {0}; Layer l;
   draw_face(&l, &ctx);
   return 0;

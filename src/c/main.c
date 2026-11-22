@@ -130,9 +130,12 @@ static void update_health(void) {
 // Buzzes while charging: a short one when the cable goes in, a double one at
 // 80 % and a long triple one when full. Silent in Quiet Time, and never for
 // the state the watch is already in when the face starts.
+static void start_charge_anim(void);
+
 static void charge_buzz(BatteryChargeState s) {
   static bool s_known, s_plugged, s_charging;
   static uint8_t s_pct;
+  if (s_known && s.is_plugged && !s_plugged) start_charge_anim();
   if (s_known && g_set.chargebuzz && !quiet_time_is_active()) {
     if (s.is_plugged && !s_plugged) {
       vibes_short_pulse();
@@ -323,6 +326,35 @@ static const AnimationImplementation s_reveal_impl = {
   .teardown = reveal_teardown,
 };
 
+// Charging animation: plays once for 2.8 s when the cable goes in.
+static Animation *s_charge_anim;
+
+static void charge_update(Animation *a, const AnimationProgress p) {
+  g_view.charge_anim = (int)((int64_t)p * 1000 / ANIMATION_NORMALIZED_MAX);
+  layer_mark_dirty(s_canvas);
+}
+
+static void charge_teardown(Animation *a) {
+  g_view.charge_anim = -1;
+  s_charge_anim = NULL;
+  layer_mark_dirty(s_canvas);
+}
+
+static const AnimationImplementation s_charge_impl = {
+  .update = charge_update,
+  .teardown = charge_teardown,
+};
+
+static void start_charge_anim(void) {
+  if (!s_canvas || s_charge_anim) return;
+  g_view.charge_anim = 0;
+  s_charge_anim = animation_create();
+  animation_set_duration(s_charge_anim, 2800);
+  animation_set_curve(s_charge_anim, AnimationCurveLinear);
+  animation_set_implementation(s_charge_anim, &s_charge_impl);
+  animation_schedule(s_charge_anim);
+}
+
 static void scrub_end(void *data) {
   s_scrub_timer = NULL;
   g_view.scrub = -1;
@@ -426,6 +458,7 @@ static void init(void) {
   weather_load();
   g_view.now = time(NULL);
   g_view.scrub = -1;
+  g_view.charge_anim = -1;
   g_view.reveal = 1000;
   battery_handler(battery_state_service_peek());
   update_health();

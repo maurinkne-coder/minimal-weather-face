@@ -86,6 +86,7 @@ typedef struct {
 typedef struct {
   time_t now;
   int reveal;         // 0..1000, ring drawing itself in
+  int charge_anim;    // -1 = off, else 0..1000 through the charging animation
   int scrub;          // -1 = off, else tenths of an hour ahead of now
   uint8_t battery;
   bool charging;

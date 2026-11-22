@@ -514,10 +514,84 @@ static void draw_text_layer(GContext *ctx, GRect b, const Theme *thp, time_t now
 
 }
 
+// A point `inset` pixels inside the screen edge, fraction f of the way
+// round from the top centre, clockwise; upright (no tilt).
+static GPoint edge_pt(GRect b, int32_t f, int inset) {
+#if defined(PBL_ROUND)
+  return round_pt(b, f, inset);
+#else
+  return rect_pt(b, f, inset);
+#endif
+}
+
+// Charging animation, shown for a moment when the cable goes in: a thick ring
+// round the screen edge fills up to the battery level, with a big lightning
+// bolt and the percentage in the middle. `p` runs 0..1000.
+static void draw_charge(GContext *ctx, GRect b, const Theme *th, int p) {
+  const bool mono = g_set.theme == THEME_MONO;
+  const GColor green = mono ? th->fg : light_bg(th) ? GColorIslamicGreen : GColorGreen;
+  const int cx = b.origin.x + b.size.w / 2, cy = b.origin.y + b.size.h / 2;
+  const int pct = g_view.battery > 100 ? 100 : g_view.battery;
+
+  graphics_context_set_fill_color(ctx, th->bg);
+  graphics_fill_rect(ctx, b, 0, GCornerNone);
+  graphics_context_set_antialiased(ctx, true);
+
+  // Ring: faint track, then the green part sweeping in (ease-out over the
+  // first half, then holding).
+  const int INSET = PBL_IF_ROUND_ELSE(9, 7), STROKE = PBL_IF_ROUND_ELSE(10, 8);
+  const int STEPS = 120;
+  int t = p >= 500 ? 1000 : p * 2;                      // 0..1000 over the first half
+  int inv = 1000 - t;
+  int eased = 1000 - (int)((int64_t)inv * inv / 1000 * inv / 1000);  // ease-out cubic
+  int32_t fill = (int32_t)((int64_t)FRAC * pct / 100 * eased / 1000);
+  graphics_context_set_stroke_width(ctx, STROKE);
+  for (int pass = 0; pass < 2; pass++) {
+    int32_t end = pass ? fill : FRAC;
+    if (end <= 0) continue;
+    graphics_context_set_stroke_color(ctx, pass ? green : th->dim);
+    GPoint prev = edge_pt(b, 0, INSET);
+    int n = (int)((int64_t)STEPS * end / FRAC) + 1;
+    for (int i = 1; i <= n; i++) {
+      int32_t f = (int32_t)((int64_t)end * i / n);
+      GPoint q = edge_pt(b, f, INSET);
+      graphics_draw_line(ctx, prev, q);
+      prev = q;
+    }
+  }
+
+  // Big bolt, growing in quickly at the start.
+  int sc = p < 150 ? 3 + p * 2 / 150 : 5;               // scale 3 -> 5
+  int by = cy - 16;
+  GPoint pts[] = { {cx, by - 6 * sc}, {cx - 4 * sc, by + sc}, {cx - sc, by + sc},
+                   {cx - 2 * sc, by + 6 * sc}, {cx + 4 * sc, by - sc}, {cx + sc, by - sc},
+                   {cx + 3 * sc, by - 6 * sc} };
+  GPathInfo info = { .num_points = 7, .points = pts };
+  GPath *path = gpath_create(&info);
+  if (path) {
+    graphics_context_set_fill_color(ctx, green);
+    gpath_draw_filled(ctx, path);
+    gpath_destroy(path);
+  }
+
+  // Percentage under the bolt.
+  char buf[8];
+  snprintf(buf, sizeof(buf), "%d%%", pct);
+  graphics_context_set_text_color(ctx, th->fg);
+  graphics_draw_text(ctx, buf, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD),
+                     GRect(cx - 50, cy + 22, 100, 34), GTextOverflowModeFill,
+                     GTextAlignmentCenter, NULL);
+}
+
 void draw_face(Layer *layer, GContext *ctx) {
   GRect b = layer_get_bounds(layer);
   time_t now = g_view.now;
   Theme th = current_theme(now);
+
+  if (g_view.charge_anim >= 0) {
+    draw_charge(ctx, b, &th, g_view.charge_anim);
+    return;
+  }
 
   graphics_context_set_fill_color(ctx, th.bg);
   graphics_fill_rect(ctx, b, 0, GCornerNone);

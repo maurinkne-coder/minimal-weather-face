@@ -9,7 +9,7 @@ typedef enum { MINUTE_UNIT = 2 } TimeUnits;
 typedef enum { ACCEL_AXIS_X } AccelAxisType;
 typedef uint32_t AnimationProgress;
 #define ANIMATION_NORMALIZED_MAX 65535
-typedef enum { AnimationCurveEaseOut, AnimationCurveEaseInOut } AnimationCurve;
+typedef enum { AnimationCurveLinear, AnimationCurveEaseOut, AnimationCurveEaseInOut } AnimationCurve;
 typedef struct { void (*setup)(Animation*); void (*update)(Animation*, const AnimationProgress); void (*teardown)(Animation*); } AnimationImplementation;
 typedef struct { void (*load)(Window*); void (*appear)(Window*); void (*disappear)(Window*); void (*unload)(Window*); } WindowHandlers;
 typedef enum { HealthMetricStepCount, HealthMetricHeartRateBPM } HealthMetric;

@@ -39,6 +39,7 @@ typedef enum { GOvalScaleModeFitCircle } GOvalScaleMode;
 #define FONT_KEY_GOTHIC_18 "gothic18"
 #define FONT_KEY_GOTHIC_18_BOLD "gothic18b"
 #define FONT_KEY_GOTHIC_24_BOLD "gothic24b"
+#define FONT_KEY_GOTHIC_28_BOLD "gothic28b"
 #define FONT_KEY_BITHAM_42_LIGHT "bitham42l"
 typedef struct ResHandle *ResHandle;
 
