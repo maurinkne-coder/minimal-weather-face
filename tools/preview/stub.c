@@ -43,6 +43,7 @@ static void fake(time_t now, int scenario) {
     g_wx.code[i] = 2; g_wx.prob[i] = 10; g_wx.gust[i] = 20; g_wx.uv[i] = g_wx.day[i] ? 20 : 0;
     if (i >= 3 && i <= 7) { g_wx.precip[i] = (uint8_t)(i == 5 ? 90 : i * 4); g_wx.prob[i] = 80; g_wx.code[i] = scenario == 1 ? 73 : 61; }
     if (i == 6 && scenario != 1) { g_wx.precip[i] = 60; g_wx.code[i] = 95; }  // thunderstorm
+    if (i == 7 && scenario != 1) g_wx.precip[i] = 254;  // extreme
     if (i >= 20 && i <= 22) { g_wx.precip[i] = 3; g_wx.prob[i] = 35; g_wx.code[i] = 51; }
   }
   g_wx.m15_t0 = (uint32_t)(now - now % 1800); g_wx.m15_count = 8;

@@ -231,13 +231,15 @@ static bool light_bg(const Theme *th) {
 // Colour of a rain bar from the amount (0.1 mm per hour) and the hour's
 // weather code. Theme blues grade light, medium and heavy rain; then fixed
 // warning colours: orange for strong rain (8 mm/h and more), red for a
-// thunderstorm or a downpour (20 mm/h and more), violet for freezing rain
+// thunderstorm or a downpour (15 mm/h and more), violet for the most extreme
+// (25 mm/h and more, the most the forecast can carry) and for freezing rain
 // (ice on the ground). Snow is white (dark grey on light backgrounds). Mono
 // keeps its greys.
 static GColor rain_color(const Theme *th, int p, uint8_t code) {
 #ifdef PBL_COLOR
   if (g_set.theme != THEME_MONO) {
-    if (code >= 95 || p >= 200) return GColorRed;
+    if (p >= 250) return argb(0xE7);              // extreme, 25 mm/h and more: violet
+    if (code >= 95 || p >= 150) return GColorRed;
     if (p >= 80) return GColorOrange;
     if (code == 56 || code == 57 || code == 66 || code == 67) return argb(0xE7);  // freezing rain: violet
     if ((code >= 71 && code <= 77) || code == 85 || code == 86) {
